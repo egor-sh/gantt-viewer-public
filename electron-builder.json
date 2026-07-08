@@ -1,0 +1,49 @@
+{
+  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+  "appId": "ai.ganttviewer.app",
+  "productName": "Gantt Viewer",
+  "copyright": "Copyright © 2026 Gantt Viewer",
+  "directories": {
+    "output": "dist",
+    "buildResources": "build"
+  },
+  "files": [
+    "out/**/*",
+    "electron/**/*",
+    "package.json"
+  ],
+  "extraMetadata": {
+    "main": "electron/main.js"
+  },
+  "mac": {
+    "target": [
+      {
+        "target": "dmg",
+        "arch": ["universal"]
+      }
+    ],
+    "category": "public.app-category.productivity",
+    "icon": "build/icon.icns",
+    "hardenedRuntime": true,
+    "gatekeeperAssess": false,
+    "entitlements": "build/entitlements.mac.plist",
+    "entitlementsInherit": "build/entitlements.mac.plist",
+    "darkModeSupport": true,
+    "extendInfo": {
+      "CFBundleDisplayName": "Gantt Viewer",
+      "CFBundleName": "Gantt Viewer",
+      "NSHumanReadableCopyright": "Открытый просмотрщик MS Project XML",
+      "LSMinimumSystemVersion": "11.0"
+    }
+  },
+  "dmg": {
+    "title": "Gantt Viewer ${version}",
+    "contents": [
+      { "x": 130, "y": 220 },
+      { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+    ],
+    "window": { "width": 540, "height": 380 },
+    "format": "ULFO",
+    "artifactName": "Gantt-Viewer-${version}-universal.dmg"
+  }
+}

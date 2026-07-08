@@ -1,0 +1,15 @@
+node_modules
+.next
+out
+dist
+dev.log
+server.log
+.DS_Store
+*.log
+.zscripts
+skills
+upload
+download
+prisma/dev.db*
+mini-services
+examples
