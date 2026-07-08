@@ -1,0 +1,39 @@
+{
+  "activeProvider": "openai",
+  "activeModel": "gpt-4o",
+  "provider": {
+    "openai": {
+      "name": "OpenAI",
+      "baseURL": "https://api.openai.com/v1",
+      "apiKey": "YOUR_API_KEY_HERE",
+      "models": {
+        "gpt-4o": { "name": "GPT-4o", "limit": { "context": 128000, "output": 16384 } },
+        "gpt-4o-mini": { "name": "GPT-4o Mini", "limit": { "context": 128000, "output": 16384 } }
+      }
+    },
+    "anthropic": {
+      "name": "Anthropic",
+      "baseURL": "https://api.anthropic.com/v1",
+      "apiKey": "YOUR_API_KEY_HERE",
+      "models": {
+        "claude-sonnet-4-20250514": { "name": "Claude Sonnet 4", "limit": { "context": 200000, "output": 8192 } }
+      }
+    },
+    "ollama": {
+      "name": "Ollama (local)",
+      "baseURL": "http://localhost:11434/v1",
+      "apiKey": "ollama",
+      "models": {
+        "llama3.1:8b": { "name": "Llama 3.1 8B", "limit": { "context": 128000 } }
+      }
+    },
+    "custom": {
+      "name": "Custom Provider",
+      "baseURL": "https://your-api-endpoint.com/v1",
+      "apiKey": "YOUR_KEY",
+      "models": {
+        "model-name": { "name": "Model Display Name" }
+      }
+    }
+  }
+}

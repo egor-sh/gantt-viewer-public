@@ -60,3 +60,6 @@ server.log
 /bun.lock
 /Caddyfile
 /prisma/
+
+# AI config with API keys
+ai-config.json

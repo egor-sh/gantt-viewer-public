@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useCallback } from "react";
-import { BarChart3, CalendarClock, ZoomIn, ZoomOut, CalendarRange, FileBarChart, Layers, AlertCircle, Users } from "lucide-react";
+import { BarChart3, CalendarClock, ZoomIn, ZoomOut, CalendarRange, FileBarChart, Layers, AlertCircle, Users, Sparkles } from "lucide-react";
 import { FileUploader, FormatNotice } from "@/components/gantt/file-uploader";
 import { GanttChart, type Zoom } from "@/components/gantt/gantt-chart";
 import { TaskDetails } from "@/components/gantt/task-details";
 import { ResourceView, type Vacation } from "@/components/gantt/resource-view";
+import { AiPanel } from "@/components/gantt/ai-panel";
 import { demoProject, type GanttProject, type GanttTask } from "@/lib/ms-project-parser";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,7 @@ export default function Home() {
     setFileName("");
     setSelected(null);
     setVacations([]);
+    setActiveTab("gantt");
   }, []);
 
   const stats = project ? computeStats(project) : null;
@@ -87,34 +89,53 @@ export default function Home() {
 
       <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-6">
         {!project ? (
-          <div className="max-w-2xl mx-auto space-y-6">
-            <div className="text-center">
-              <h2 className="text-xl sm:text-2xl font-semibold text-slate-900">
-                Откройте файл Microsoft Project
-              </h2>
-              <p className="text-sm text-slate-500 mt-1.5 max-w-md mx-auto">
-                Простой просмотрщик файлов <code className="text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded text-[12px]">.xml</code> из MS Project.
-                Работает локально — ничего не устанавливается, файлы никуда не отправляются.
-              </p>
-            </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList>
+              <TabsTrigger value="gantt">
+                <FileBarChart className="w-3.5 h-3.5" />
+                Открыть файл
+              </TabsTrigger>
+              <TabsTrigger value="ai">
+                <Sparkles className="w-3.5 h-3.5" />
+                AI-ассистент
+              </TabsTrigger>
+            </TabsList>
 
-            <FileUploader onLoad={handleLoad} onError={handleError} />
+            <TabsContent value="gantt">
+              <div className="max-w-2xl mx-auto space-y-6">
+                <div className="text-center">
+                  <h2 className="text-xl sm:text-2xl font-semibold text-slate-900">
+                    Откройте файл Microsoft Project
+                  </h2>
+                  <p className="text-sm text-slate-500 mt-1.5 max-w-md mx-auto">
+                    Простой просмотрщик файлов <code className="text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded text-[12px]">.xml</code> из MS Project.
+                    Работает локально — ничего не устанавливается, файлы никуда не отправляются.
+                  </p>
+                </div>
 
-            <FormatNotice />
+                <FileUploader onLoad={handleLoad} onError={handleError} />
 
-            <div className="pt-2">
-              <Button onClick={loadDemo} variant="default" className="w-full" size="lg">
-                <Layers className="w-4 h-4 mr-2" />
-                Открыть демо-проект
-              </Button>
-            </div>
+                <FormatNotice />
 
-            <div className="grid grid-cols-3 gap-3 pt-4 text-center">
-              <Feature icon={<FileBarChart className="w-4 h-4" />} title="XML-формат" desc="Открывается напрямую из MS Project" />
-              <Feature icon={<CalendarClock className="w-4 h-4" />} title="Таймлайн" desc="Дни, недели, месяцы" />
-              <Feature icon={<Users className="w-4 h-4" />} title="Ресурсы" desc="Загруженность и отпуска" />
-            </div>
-          </div>
+                <div className="pt-2">
+                  <Button onClick={loadDemo} variant="default" className="w-full" size="lg">
+                    <Layers className="w-4 h-4 mr-2" />
+                    Открыть демо-проект
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 pt-4 text-center">
+                  <Feature icon={<FileBarChart className="w-4 h-4" />} title="XML-формат" desc="Открывается напрямую из MS Project" />
+                  <Feature icon={<CalendarClock className="w-4 h-4" />} title="Таймлайн" desc="Дни, недели, месяцы" />
+                  <Feature icon={<Sparkles className="w-4 h-4" />} title="AI-ассистент" desc="Анализ, генерация, чат" />
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="ai">
+              <AiPanel project={project} onLoadProject={handleLoad} />
+            </TabsContent>
+          </Tabs>
         ) : (
           <div className="space-y-4">
             {/* Toolbar */}
@@ -163,6 +184,10 @@ export default function Home() {
                   <Users className="w-3.5 h-3.5" />
                   Ресурсы
                 </TabsTrigger>
+                <TabsTrigger value="ai">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  AI-ассистент
+                </TabsTrigger>
               </TabsList>
 
               {/* Gantt tab */}
@@ -209,6 +234,11 @@ export default function Home() {
                   vacations={vacations}
                   onVacationsChange={setVacations}
                 />
+              </TabsContent>
+
+              {/* AI tab */}
+              <TabsContent value="ai">
+                <AiPanel project={project} onLoadProject={handleLoad} />
               </TabsContent>
             </Tabs>
           </div>

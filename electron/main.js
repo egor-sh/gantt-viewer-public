@@ -1,9 +1,11 @@
 // Electron main process.
 // Loads the Next.js static export (`out/index.html`) inside a native window.
 
-const { app, BrowserWindow, shell, protocol, net } = require("electron");
+const { app, BrowserWindow, shell, protocol, net, ipcMain } = require("electron");
 const path = require("path");
 const { pathToFileURL } = require("node:url");
+
+const aiHandler = require("./ai-handler");
 
 // ---------------------------------------------------------------------------
 // Custom protocol: app://
@@ -109,6 +111,29 @@ app.whenReady().then(() => {
       return await net.fetch(pathToFileURL(resolved).toString());
     } catch {
       return new Response("Not found", { status: 404 });
+    }
+  });
+
+  // ── AI IPC handlers ────────────────────────────────────────────
+  ipcMain.handle("ai:config:get", () => aiHandler.readConfig());
+  ipcMain.handle("ai:config:save", (_e, config) => { aiHandler.saveConfig(config); return true; });
+  ipcMain.handle("ai:config:path", () => aiHandler.getConfigPath());
+
+  ipcMain.handle("ai:chat", async (event, { messages, systemPrompt, requestId }) => {
+    try {
+      await aiHandler.handleChat(event, { messages, systemPrompt, requestId });
+    } catch (err) {
+      const win = BrowserWindow.fromWebContents(event.sender);
+      win?.webContents.send("ai:stream-error", { requestId, error: err.message });
+    }
+  });
+
+  ipcMain.handle("ai:generate", async (event, { description, requestId }) => {
+    try {
+      await aiHandler.handleGenerate(event, { description, requestId });
+    } catch (err) {
+      const win = BrowserWindow.fromWebContents(event.sender);
+      win?.webContents.send("ai:stream-error", { requestId, error: err.message });
     }
   });
 
