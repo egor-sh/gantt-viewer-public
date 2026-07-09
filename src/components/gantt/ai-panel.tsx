@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import type { KeyboardEvent } from "react";
-import { Settings, Send, Sparkles, AlertTriangle, FileText, Wand2 } from "lucide-react";
+import { Settings, Send, Sparkles, AlertTriangle, FileText, Wand2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -42,6 +42,7 @@ export function AiPanel({ project, onLoadProject }: AiPanelProps) {
   const requestIdRef = useRef<string | null>(null);
   const isGenerateRef = useRef(false);
   const genBufferRef = useRef("");
+  const chatBufferRef = useRef(""); // accumulates chat response for XML detection
   const chunkSeenRef = useRef(false);
   const replaceOnFirstRef = useRef(false);
   const registeredRef = useRef(false);
@@ -61,6 +62,7 @@ export function AiPanel({ project, onLoadProject }: AiPanelProps) {
         genBufferRef.current += data.chunk;
         setGenPreview((prev) => prev + data.chunk);
       } else {
+        chatBufferRef.current += data.chunk;
         setMessages((prev) => {
           const idx = prev.length - 1;
           if (idx < 0 || prev[idx].role !== "assistant") return prev;
@@ -98,6 +100,22 @@ export function AiPanel({ project, onLoadProject }: AiPanelProps) {
         genBufferRef.current = "";
         setGenPreview("");
         isGenerateRef.current = false;
+      } else {
+        // Chat mode — auto-detect <Project> XML and apply instantly
+        const chatFull = chatBufferRef.current;
+        const xmlMatch = chatFull.match(/<Project>[\s\S]*<\/Project>/);
+        if (xmlMatch) {
+          try {
+            const p = parseMsProjectXml(xmlMatch[0]);
+            onLoadProject(p, "ai-updated.xml");
+            toast.success("План обновлён", {
+              description: `${p.tasks.length} задач · изменения применены автоматически`,
+            });
+          } catch {
+            // XML present but malformed — show "Apply" button on message
+          }
+        }
+        chatBufferRef.current = "";
       }
       setLoading(false);
       chunkSeenRef.current = false;
@@ -291,6 +309,26 @@ export function AiPanel({ project, onLoadProject }: AiPanelProps) {
                       <span className="inline-flex gap-1 items-center py-1">
                         <Dot /> <Dot delay="0.15s" /> <Dot delay="0.3s" />
                       </span>
+                    )}
+                    {/* Show "Apply XML" button if assistant message contains <Project> */}
+                    {m.role === "assistant" && m.content && /<Project>[\s\S]*<\/Project>/.test(m.content) && (
+                      <button
+                        onClick={() => {
+                          const match = m.content.match(/<Project>[\s\S]*<\/Project>/);
+                          if (!match) return;
+                          try {
+                            const p = parseMsProjectXml(match[0]);
+                            onLoadProject(p, "ai-updated.xml");
+                            toast.success("План обновлён", { description: `${p.tasks.length} задач` });
+                          } catch {
+                            toast.error("Не удалось применить XML");
+                          }
+                        }}
+                        className="mt-2 flex items-center gap-1.5 px-2.5 py-1 bg-emerald-600 text-white rounded-md text-[11px] font-medium hover:bg-emerald-700 transition-colors"
+                      >
+                        <Check className="w-3 h-3" />
+                        Применить изменения
+                      </button>
                     )}
                   </div>
                 </div>
