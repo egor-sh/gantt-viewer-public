@@ -1,6 +1,10 @@
 // Electron main process.
 // Loads the Next.js static export (`out/index.html`) inside a native window.
 
+// Allow corporate self-signed certificates (SSL inspection in VPN).
+// Must be set before any fetch() call in Node.js context.
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
 const { app, BrowserWindow, shell, protocol, net, ipcMain } = require("electron");
 const path = require("path");
 const { pathToFileURL } = require("node:url");
@@ -84,6 +88,13 @@ function createWindow() {
     mainWindow = null;
   });
 }
+
+// Trust corporate self-signed certificates (e.g. AlfaGen SSL inspection).
+// This allows fetch() in ai-handler.js to work inside corporate VPN.
+app.on("certificate-error", (event, _webContents, _url, _error, _certificate, callback) => {
+  event.preventDefault();
+  callback(true);
+});
 
 app.whenReady().then(() => {
   // ---- Register the app:// protocol handler ----
