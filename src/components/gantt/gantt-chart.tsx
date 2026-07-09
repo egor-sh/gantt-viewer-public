@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { eachDayOfInterval, format, startOfDay, addDays, differenceInCalendarDays, isWeekend } from "date-fns";
 import type { GanttProject, GanttTask, LinkType } from "@/lib/ms-project-parser";
 import { cn } from "@/lib/utils";
@@ -59,7 +59,41 @@ const LINK_TYPE_LABEL: Record<LinkType, string> = {
 };
 
 export function GanttChart({ project, zoom, onTaskClick, selectedUid }: Props) {
-  const range = useRange(project);
+  // Local copy of tasks so we can toggle .collapsed on summary rows
+  const [collapsedSet, setCollapsedSet] = useState<Set<number>>(new Set());
+  const projectLocal = useMemo(() => {
+    const tasks = project.tasks.map((t) => ({
+      ...t,
+      children: t.children.map((c) => ({ ...c })),
+      collapsed: collapsedSet.has(t.uid),
+    }));
+    // Rebuild children arrays from outline numbers
+    const byUid = new Map(tasks.map((t) => [t.uid, { ...t, children: [] as GanttTask[] }]));
+    const roots: GanttTask[] = [];
+    for (const t of tasks) {
+      const parts = t.outlineNumber.split(".");
+      if (parts.length === 1) {
+        roots.push(byUid.get(t.uid)!);
+      } else {
+        const parentNum = parts.slice(0, -1).join(".");
+        const parent = [...byUid.values()].find((x) => x.outlineNumber === parentNum);
+        if (parent) parent.children.push(byUid.get(t.uid)!);
+        else roots.push(byUid.get(t.uid)!);
+      }
+    }
+    return { ...project, tasks, resources: project.resources };
+  }, [project, collapsedSet]);
+
+  const toggleCollapse = useCallback((uid: number) => {
+    setCollapsedSet((prev) => {
+      const next = new Set(prev);
+      if (next.has(uid)) next.delete(uid);
+      else next.add(uid);
+      return next;
+    });
+  }, []);
+
+  const range = useRange(projectLocal);
   const dayWidth = ZOOM_PX[zoom];
   const days = useMemo(
     () => eachDayOfInterval({ start: range.start, end: range.end }),
@@ -80,9 +114,9 @@ export function GanttChart({ project, zoom, onTaskClick, selectedUid }: Props) {
         }
       }
     };
-    walk(project.tasks.filter((t) => t.outlineLevel === 1), 0);
+    walk(projectLocal.tasks.filter((t) => t.outlineLevel === 1), 0);
     return out;
-  }, [project]);
+  }, [projectLocal]);
 
   const uidToY = useMemo(() => {
     const m = new Map<number, number>();
@@ -95,7 +129,7 @@ export function GanttChart({ project, zoom, onTaskClick, selectedUid }: Props) {
     const out: { d: string; key: string; type: LinkType }[] = [];
     for (const { task } of flat) {
       for (const p of task.predecessors) {
-        const from = project.tasks.find((x) => x.uid === p.fromUid);
+        const from = projectLocal.tasks.find((x) => x.uid === p.fromUid);
         if (!from) continue;
         const fy = uidToY.get(from.uid);
         const ty = uidToY.get(task.uid);
@@ -118,7 +152,7 @@ export function GanttChart({ project, zoom, onTaskClick, selectedUid }: Props) {
       }
     }
     return out;
-  }, [flat, project, uidToY, range.start, dayWidth]);
+  }, [flat, projectLocal, uidToY, range.start, dayWidth]);
 
   const tooltipTask = flat.find((x) => x.task.uid === hoverUid)?.task;
 
@@ -156,7 +190,16 @@ export function GanttChart({ project, zoom, onTaskClick, selectedUid }: Props) {
               >
                 <div className="flex items-center gap-1.5 min-w-0">
                   {task.isSummary && (
-                    <span className="text-alfa-gray text-[10px] font-mono">▾</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleCollapse(task.uid);
+                      }}
+                      className="text-alfa-gray hover:text-alfa-charcoal text-[10px] font-mono w-4 h-4 flex items-center justify-center shrink-0 transition-colors"
+                      title={collapsedSet.has(task.uid) ? "Раскрыть" : "Свернуть"}
+                    >
+                      {collapsedSet.has(task.uid) ? "▸" : "▾"}
+                    </button>
                   )}
                   {task.isMilestone ? (
                     <span className="text-alfa-red shrink-0">◆</span>

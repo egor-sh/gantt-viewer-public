@@ -282,3 +282,109 @@ export function demoProject(): GanttProject {
     ],
   };
 }
+
+// ── Serialize project back to MSPDI XML ───────────────────────────────────
+
+const LINK_TYPE_REVERSE: Record<LinkType, number> = {
+  FS: 1,
+  SS: 2,
+  FF: 3,
+  SF: 4,
+};
+
+function isoDateTime(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
+}
+
+function hoursToDuration(h: number): string {
+  if (h <= 0) return "PT0H";
+  return `PT${Math.round(h)}H`;
+}
+
+export function projectToXml(project: GanttProject): string {
+  const { title, startDate, finishDate, tasks, resources } = project;
+
+  const parts: string[] = [];
+  parts.push('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>');
+  parts.push('<Project>');
+  parts.push(`  <Name>${escapeXml(title)}</Name>`);
+  parts.push(`  <StartDate>${isoDateTime(startDate)}</StartDate>`);
+  parts.push(`  <FinishDate>${isoDateTime(finishDate)}</FinishDate>`);
+
+  // Tasks
+  parts.push("  <Tasks>");
+  for (const t of tasks) {
+    parts.push("    <Task>");
+    parts.push(`      <UID>${t.uid}</UID>`);
+    parts.push(`      <ID>${t.id}</ID>`);
+    parts.push(`      <Name>${escapeXml(t.name)}</Name>`);
+    parts.push(`      <Start>${isoDateTime(t.start)}</Start>`);
+    parts.push(`      <Finish>${isoDateTime(t.finish)}</Finish>`);
+    parts.push(`      <Duration>${hoursToDuration(t.durationHours)}</Duration>`);
+    parts.push(`      <OutlineLevel>${t.outlineLevel}</OutlineLevel>`);
+    parts.push(`      <OutlineNumber>${t.outlineNumber}</OutlineNumber>`);
+    parts.push(`      <Summary>${t.isSummary ? 1 : 0}</Summary>`);
+    parts.push(`      <Milestone>${t.isMilestone ? 1 : 0}</Milestone>`);
+    parts.push(`      <Critical>${t.isCritical ? 1 : 0}</Critical>`);
+    parts.push(`      <PercentComplete>${t.percentComplete}</PercentComplete>`);
+    if (t.notes) {
+      parts.push(`      <Notes>${escapeXml(t.notes)}</Notes>`);
+    }
+    // Predecessor links
+    for (const p of t.predecessors) {
+      parts.push("      <PredecessorLink>");
+      parts.push(`        <PredecessorUID>${p.fromUid}</PredecessorUID>`);
+      parts.push(`        <SuccessorUID>${p.toUid}</SuccessorUID>`);
+      parts.push(`        <Type>${LINK_TYPE_REVERSE[p.type]}</Type>`);
+      parts.push("      </PredecessorLink>");
+    }
+    parts.push("    </Task>");
+  }
+  parts.push("  </Tasks>");
+
+  // Resources
+  if (resources.length > 0) {
+    parts.push("  <Resources>");
+    for (const r of resources) {
+      parts.push("    <Resource>");
+      parts.push(`      <UID>${r.uid}</UID>`);
+      parts.push(`      <Name>${escapeXml(r.name)}</Name>`);
+      parts.push("    </Resource>");
+    }
+    parts.push("  </Resources>");
+  }
+
+  // Assignments (task -> resource mapping)
+  const assignments: { taskUid: number; resourceUid: number }[] = [];
+  for (const t of tasks) {
+    for (const rn of t.resources) {
+      const res = resources.find((r) => r.name === rn);
+      if (res) assignments.push({ taskUid: t.uid, resourceUid: res.uid });
+    }
+  }
+  if (assignments.length > 0) {
+    parts.push("  <Assignments>");
+    for (let i = 0; i < assignments.length; i++) {
+      const a = assignments[i];
+      parts.push("    <Assignment>");
+      parts.push(`      <UID>${i + 1}</UID>`);
+      parts.push(`      <TaskUID>${a.taskUid}</TaskUID>`);
+      parts.push(`      <ResourceUID>${a.resourceUid}</ResourceUID>`);
+      parts.push("    </Assignment>");
+    }
+    parts.push("  </Assignments>");
+  }
+
+  parts.push("</Project>");
+  return parts.join("\n");
+}
+
+function escapeXml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}

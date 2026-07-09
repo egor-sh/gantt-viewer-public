@@ -1,18 +1,26 @@
 'use client';
 
-import { useState, useCallback } from "react";
-import { BarChart3, CalendarClock, ZoomIn, ZoomOut, CalendarRange, FileBarChart, Layers, AlertCircle, Users, Sparkles } from "lucide-react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { BarChart3, CalendarClock, ZoomIn, ZoomOut, CalendarRange, FileBarChart, Layers, AlertCircle, Users, Sparkles, Undo2, History, Save, ChevronDown } from "lucide-react";
 import { FileUploader, FormatNotice } from "@/components/gantt/file-uploader";
 import { GanttChart, type Zoom } from "@/components/gantt/gantt-chart";
 import { TaskDetails } from "@/components/gantt/task-details";
 import { ResourceView, type Vacation } from "@/components/gantt/resource-view";
 import { AiPanel } from "@/components/gantt/ai-panel";
-import { demoProject, type GanttProject, type GanttTask } from "@/lib/ms-project-parser";
+import { demoProject, parseMsProjectXml, projectToXml, type GanttProject, type GanttTask } from "@/lib/ms-project-parser";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+interface VersionEntry {
+  id: string;
+  timestamp: string;
+  label: string;
+}
 
 export default function Home() {
   const [project, setProject] = useState<GanttProject | null>(null);
@@ -22,11 +30,138 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("gantt");
   const [vacations, setVacations] = useState<Vacation[]>([]);
 
+  // Versioning state
+  const [versions, setVersions] = useState<VersionEntry[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [unsavedChanges, setUnsavedChanges] = useState(false);
+  const fileNameRef = useRef<string>("");
+  const projectRef = useRef<GanttProject | null>(null);
+
+  // Keep refs in sync
+  useEffect(() => { fileNameRef.current = fileName; }, [fileName]);
+  useEffect(() => { projectRef.current = project; }, [project]);
+
+  // Notify Electron main process about unsaved state
+  useEffect(() => {
+    const el = (window as any).electron;
+    if (el?.setUnsavedChanges) {
+      el.setUnsavedChanges(unsavedChanges);
+    }
+  }, [unsavedChanges]);
+
+  // ── Load version list when fileName changes ──
+  const refreshVersions = useCallback(async () => {
+    const vf = (window as any).versions;
+    if (!vf || !fileNameRef.current) return;
+    try {
+      const list = await vf.list(fileNameRef.current);
+      setVersions(list || []);
+    } catch {
+      setVersions([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshVersions();
+  }, [fileName, refreshVersions]);
+
+  // ── Listen for save-before-quit signal from main process ──
+  useEffect(() => {
+    const el = (window as any).electron;
+    if (!el?.onSaveBeforeQuit) return;
+
+    el.onSaveBeforeQuit(() => {
+      // Save current project as XML version, then confirm quit
+      saveProjectVersion("Сохранение перед выходом");
+      setUnsavedChanges(false);
+      // Give the save a moment, then confirm quit
+      setTimeout(() => {
+        el.confirmQuit?.();
+      }, 500);
+    });
+  }, []);
+
+  // ── Push current project XML as a version ──
+  const saveProjectVersion = useCallback(async (label: string = "Ручное сохранение") => {
+    const vf = (window as any).versions;
+    const proj = projectRef.current;
+    if (!vf || !proj || !fileNameRef.current) return;
+
+    try {
+      const xml = projectToXml(proj);
+      await vf.push(xml, fileNameRef.current, label);
+      setUnsavedChanges(false);
+      refreshVersions();
+    } catch (e) {
+      console.error("Failed to save version:", e);
+    }
+  }, [refreshVersions]);
+
+  // ── Undo: restore previous version ──
+  const handleUndo = useCallback(async () => {
+    const vf = (window as any).versions;
+    const proj = projectRef.current;
+    if (!vf || !proj || !fileNameRef.current) {
+      toast.error("Нет проекта для отката");
+      return;
+    }
+
+    // Push current state first (so undo is reversible)
+    const currentXml = projectToXml(proj);
+    await vf.push(currentXml, fileNameRef.current, "Перед откатом");
+
+    // Get the version before that (now second newest)
+    const xml = await vf.previous(fileNameRef.current);
+    if (!xml) {
+      toast.error("Нет предыдущих версий");
+      return;
+    }
+
+    try {
+      const restored = parseMsProjectXml(xml);
+      setProject(restored);
+      setSelected(null);
+      setUnsavedChanges(false);
+      toast.success("Откат выполнен", {
+        description: `${restored.tasks.length} задач восстановлено`,
+      });
+      refreshVersions();
+    } catch {
+      toast.error("Не удалось восстановить версию");
+    }
+  }, [refreshVersions]);
+
+  // ── Restore specific version from history ──
+  const handleRestoreVersion = useCallback(async (versionId: string) => {
+    const vf = (window as any).versions;
+    if (!vf || !fileNameRef.current) return;
+
+    const xml = await vf.get(fileNameRef.current, versionId);
+    if (!xml) {
+      toast.error("Версия не найдена");
+      return;
+    }
+
+    try {
+      const restored = parseMsProjectXml(xml);
+      setProject(restored);
+      setSelected(null);
+      setUnsavedChanges(true);
+      setHistoryOpen(false);
+      toast.success("Версия восстановлена", {
+        description: format(new Date(versions.find(v => v.id === versionId)?.timestamp || Date.now()), "dd.MM.yyyy HH:mm"),
+      });
+    } catch {
+      toast.error("Не удалось восстановить версию");
+    }
+  }, [versions]);
+
   const handleLoad = useCallback((p: GanttProject, name: string) => {
     setProject(p);
     setFileName(name);
     setSelected(null);
     setActiveTab("gantt");
+    setUnsavedChanges(false);
     toast.success(`Загружено: ${name}`, {
       description: `${p.tasks.length} задач · ${p.resources.length} ресурсов`,
     });
@@ -41,6 +176,7 @@ export default function Home() {
     setFileName("demo-project.xml");
     setSelected(null);
     setActiveTab("gantt");
+    setUnsavedChanges(false);
     toast("Загружен демо-проект");
   }, []);
 
@@ -50,15 +186,41 @@ export default function Home() {
     setSelected(null);
     setVacations([]);
     setActiveTab("gantt");
+    setUnsavedChanges(false);
+    setVersions([]);
   }, []);
+
+  // ── Wrap onLoadProject to auto-save version on AI changes ──
+  const handleLoadWithVersioning = useCallback((p: GanttProject, name: string) => {
+    // If loading from AI (updating existing project), save a version first
+    const vf = (window as any).versions;
+    const oldProj = projectRef.current;
+    const oldName = fileNameRef.current;
+
+    if (vf && oldProj && oldName && oldName === name) {
+      // Same file updated by AI — push current state as a version
+      const xml = projectToXml(oldProj);
+      vf.push(xml, oldName, "Перед изменением AI").then(() => {
+        refreshVersions();
+      }).catch(() => {});
+    }
+
+    setProject(p);
+    setFileName(name);
+    setSelected(null);
+    setUnsavedChanges(true);
+    toast.success(`Загружено: ${name}`, {
+      description: `${p.tasks.length} задач · ${p.resources.length} ресурсов`,
+    });
+  }, [refreshVersions]);
 
   const stats = project ? computeStats(project) : null;
 
   return (
     <div className="min-h-screen flex flex-col bg-alfa-gray-bg">
       {/* Header — Alfa Bank style: dark charcoal bar with red accent */}
-      <header className="bg-alfa-charcoal text-white sticky top-0 z-40 border-b border-alfa-slate">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4 flex-wrap pl-[90px]">
+      <header className="bg-alfa-charcoal text-white sticky top-0 z-40 border-b border-alfa-slate" style={{ paddingLeft: "78px" }}>
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-lg bg-alfa-red flex items-center justify-center shrink-0 shadow-md">
               <BarChart3 className="w-5 h-5 text-white" />
@@ -74,6 +236,74 @@ export default function Home() {
           </div>
           {project && (
             <div className="flex items-center gap-2">
+              {/* Undo button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleUndo}
+                disabled={versions.length === 0}
+                className="border-alfa-slate text-white hover:bg-alfa-slate hover:text-white"
+                title="Откатить к предыдущей версии"
+              >
+                <Undo2 className="w-4 h-4 mr-1.5" />
+                Откатить
+              </Button>
+              {/* History dropdown */}
+              <div className="relative">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setHistoryOpen(!historyOpen)}
+                  disabled={versions.length === 0}
+                  className="border-alfa-slate text-white hover:bg-alfa-slate hover:text-white"
+                  title="История версий"
+                >
+                  <History className="w-4 h-4 mr-1.5" />
+                  История
+                  <ChevronDown className="w-3 h-3 ml-1" />
+                </Button>
+                {historyOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setHistoryOpen(false)} />
+                    <div className="absolute right-0 top-full mt-1 z-50 bg-white rounded-lg shadow-xl border border-alfa-gray-light min-w-[280px] max-h-[360px] overflow-y-auto">
+                      <div className="px-3 py-2 text-[11px] uppercase tracking-wide text-alfa-gray border-b border-alfa-gray-light bg-alfa-gray-bg sticky top-0">
+                        Последние версии ({versions.length}/5)
+                      </div>
+                      {versions.map((v, i) => (
+                        <button
+                          key={v.id}
+                          onClick={() => handleRestoreVersion(v.id)}
+                          className="w-full text-left px-3 py-2 hover:bg-alfa-gray-bg transition-colors border-b border-alfa-gray-light/50 last:border-0"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="w-6 h-6 rounded-full bg-alfa-red/10 text-alfa-red flex items-center justify-center text-[10px] font-bold shrink-0">
+                              {versions.length - i}
+                            </span>
+                            <div className="min-w-0">
+                              <div className="text-[12px] font-medium text-alfa-charcoal truncate">{v.label}</div>
+                              <div className="text-[10px] text-alfa-gray">{format(new Date(v.timestamp), "dd.MM.yyyy HH:mm:ss")}</div>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+              {/* Save button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => saveProjectVersion("Ручное сохранение")}
+                className={cn(
+                  "border-alfa-slate text-white hover:bg-alfa-slate hover:text-white",
+                  unsavedChanges && "border-alfa-red/50 ring-1 ring-alfa-red/30",
+                )}
+                title="Сохранить версию"
+              >
+                <Save className="w-4 h-4 mr-1.5" />
+                {unsavedChanges ? "Сохранить *" : "Сохранить"}
+              </Button>
               <Button variant="outline" size="sm" onClick={loadDemo} className="border-alfa-slate text-white hover:bg-alfa-slate hover:text-white">
                 <Layers className="w-4 h-4 mr-1.5" />
                 Демо
@@ -135,7 +365,7 @@ export default function Home() {
             </TabsContent>
 
             <TabsContent value="ai">
-              <AiPanel project={project} onLoadProject={handleLoad} />
+              <AiPanel project={project} onLoadProject={handleLoadWithVersioning} />
             </TabsContent>
           </Tabs>
         ) : (
@@ -150,6 +380,11 @@ export default function Home() {
                   {fileName && (
                     <span className="text-[11px] text-alfa-gray font-mono truncate">
                       {fileName}
+                    </span>
+                  )}
+                  {unsavedChanges && (
+                    <span className="text-[10px] text-alfa-red font-medium bg-alfa-red/10 px-1.5 py-0.5 rounded">
+                      несохранённые изменения
                     </span>
                   )}
                 </div>
@@ -240,7 +475,7 @@ export default function Home() {
 
               {/* AI tab */}
               <TabsContent value="ai">
-                <AiPanel project={project} onLoadProject={handleLoad} />
+                <AiPanel project={project} onLoadProject={handleLoadWithVersioning} />
               </TabsContent>
             </Tabs>
           </div>

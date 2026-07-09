@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useCallback } from "react";
 import { format, eachDayOfInterval, differenceInCalendarDays, isWeekend, parseISO, isValid } from "date-fns";
-import { Users, CalendarPlus, Trash2, AlertTriangle, Plane, Clock } from "lucide-react";
+import { Users, CalendarPlus, Trash2, AlertTriangle, Plane, Clock, DownloadCloud, Loader2 } from "lucide-react";
 import type { GanttProject, GanttTask } from "@/lib/ms-project-parser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -124,6 +124,7 @@ export function ResourceView({ project, vacations, onVacationsChange }: Resource
   const [newStart, setNewStart] = useState("");
   const [newEnd, setNewEnd] = useState("");
   const [newNote, setNewNote] = useState("");
+  const [confluenceLoading, setConfluenceLoading] = useState(false);
 
   const addVacation = useCallback(() => {
     if (!newRes || !newStart || !newEnd) {
@@ -145,6 +146,53 @@ export function ResourceView({ project, vacations, onVacationsChange }: Resource
     setNewNote("");
     toast.success(`Отпуск добавлен: ${newRes}`);
   }, [newRes, newStart, newEnd, newNote, vacations, onVacationsChange]);
+
+  const fetchConfluenceVacations = useCallback(async () => {
+    const wf = (window as any).confluence;
+    if (!wf) {
+      toast.error("Confluence API недоступен", { description: "Запустите приложение в Electron" });
+      return;
+    }
+    setConfluenceLoading(true);
+    try {
+      const result = await wf.fetchVacations({});
+      const fetched: Vacation[] = (result.vacations || []).map((v: any) => ({
+        id: crypto.randomUUID(),
+        resource: v.resource,
+        start: v.start,
+        end: v.end,
+        note: v.note || "Confluence",
+      }));
+
+      if (fetched.length === 0) {
+        toast.info("Отпуска не найдены", {
+          description: result.pagesFound
+            ? `Найдено страниц: ${result.pagesFound}, но даты не распознаны`
+            : "Попробуйте изменить запрос или проверить доступ к Confluence",
+        });
+      } else {
+        // Merge with existing — skip duplicates by resource+start+end
+        const existing = new Set(vacations.map((v) => `${v.resource}|${v.start}|${v.end}`));
+        const fresh = fetched.filter((v) => !existing.has(`${v.resource}|${v.start}|${v.end}`));
+        if (fresh.length > 0) {
+          onVacationsChange([...vacations, ...fresh]);
+          toast.success(`Загружено отпусков из Confluence: ${fresh.length}`, {
+            description: `Всего стало: ${vacations.length + fresh.length}`,
+          });
+        } else {
+          toast.info("Новых отпусков не найдено", {
+            description: "Все записи уже присутствуют в таблице",
+          });
+        }
+      }
+    } catch (e: any) {
+      toast.error("Ошибка загрузки из Confluence", {
+        description: e.message || "Проверьте настройки MCP",
+      });
+    } finally {
+      setConfluenceLoading(false);
+    }
+  }, [vacations, onVacationsChange]);
 
   const removeVacation = useCallback((id: string) => {
     onVacationsChange(vacations.filter((v) => v.id !== id));
@@ -289,6 +337,21 @@ export function ResourceView({ project, vacations, onVacationsChange }: Resource
           <Button onClick={addVacation} size="sm" className="h-9">
             <CalendarPlus className="w-4 h-4 mr-1" />
             Добавить
+          </Button>
+          <Button
+            onClick={fetchConfluenceVacations}
+            size="sm"
+            variant="outline"
+            disabled={confluenceLoading}
+            className="h-9 border-alfa-red/30 text-alfa-red hover:bg-alfa-red/5"
+            title="Загрузить отпуска из Confluence через MCP"
+          >
+            {confluenceLoading ? (
+              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+            ) : (
+              <DownloadCloud className="w-4 h-4 mr-1" />
+            )}
+            Взять из Confluence
           </Button>
         </div>
 

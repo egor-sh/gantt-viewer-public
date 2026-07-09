@@ -5,11 +5,13 @@
 // Must be set before any fetch() call in Node.js context.
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
-const { app, BrowserWindow, shell, protocol, net, ipcMain } = require("electron");
+const { app, BrowserWindow, shell, protocol, net, ipcMain, dialog } = require("electron");
 const path = require("path");
 const { pathToFileURL } = require("node:url");
 
 const aiHandler = require("./ai-handler");
+const versionManager = require("./version-manager");
+const confluenceHandler = require("./mcp-confluence");
 
 // ---------------------------------------------------------------------------
 // Custom protocol: app://
@@ -84,6 +86,35 @@ function createWindow() {
     return { action: "allow" };
   });
 
+  // ── Intercept window close to ask about saving changes ──
+  mainWindow.on("close", (e) => {
+    if (mainWindow._unsavedChanges) {
+      e.preventDefault();
+      mainWindow._unsavedChanges = false; // prevent re-trigger
+
+      const choice = dialog.showMessageBoxSync(mainWindow, {
+        type: "question",
+        buttons: ["Сохранить", "Не сохранять", "Отмена"],
+        defaultId: 0,
+        cancelId: 2,
+        title: "Несохранённые изменения",
+        message: "У вас есть несохранённые изменения в проекте.",
+        detail: "Сохранить перед выходом?",
+      });
+
+      if (choice === 0) {
+        // Save — tell renderer to save, then close
+        mainWindow.webContents.send("app:save-before-quit");
+        // Renderer will call window.electron.confirmQuit() after saving
+      } else if (choice === 1) {
+        // Don't save — just close
+        mainWindow._unsavedChanges = false;
+        mainWindow.close();
+      }
+      // choice === 2 → cancel, do nothing (preventDefault already called)
+    }
+  });
+
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
@@ -146,6 +177,49 @@ app.whenReady().then(() => {
       const win = BrowserWindow.fromWebContents(event.sender);
       win?.webContents.send("ai:stream-error", { requestId, error: err.message });
     }
+  });
+
+  // ── Versioning IPC handlers ──────────────────────────────────────
+  ipcMain.handle("version:push", (_e, { xml, fileName, label }) => {
+    return versionManager.pushVersion(xml, fileName, label);
+  });
+
+  ipcMain.handle("version:list", (_e, { fileName }) => {
+    return versionManager.getVersions(fileName);
+  });
+
+  ipcMain.handle("version:get", (_e, { fileName, versionId }) => {
+    return versionManager.getVersion(fileName, versionId);
+  });
+
+  ipcMain.handle("version:previous", (_e, { fileName }) => {
+    return versionManager.getPreviousVersion(fileName);
+  });
+
+  ipcMain.handle("version:clear", (_e, { fileName }) => {
+    versionManager.clearVersions(fileName);
+    return true;
+  });
+
+  // ── Confluence IPC handler ───────────────────────────────────────
+  ipcMain.handle("confluence:vacations", async (_e, params) => {
+    return await confluenceHandler.fetchVacations(params);
+  });
+
+  // ── Unsaved changes tracking ─────────────────────────────────────
+  // Renderer sets this flag when the user makes changes to the project.
+  ipcMain.handle("app:set-unsaved", (_e, { hasChanges }) => {
+    if (mainWindow) mainWindow._unsavedChanges = hasChanges;
+    return true;
+  });
+
+  // Renderer calls this after saving — closes the window for real.
+  ipcMain.handle("app:confirm-quit", () => {
+    if (mainWindow) {
+      mainWindow._unsavedChanges = false;
+      mainWindow.close();
+    }
+    return true;
   });
 
   createWindow();
