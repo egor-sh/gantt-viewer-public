@@ -1,6 +1,6 @@
 {
   "name": "gantt-viewer",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Просмотрщик диаграмм Ганта для файлов Microsoft Project (XML)",
   "author": "Gantt Viewer",
   "license": "MIT",

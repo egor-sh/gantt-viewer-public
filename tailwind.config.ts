@@ -9,6 +9,18 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        /* Alfa Bank brand palette */
+        alfa: {
+          red: "#ef2228",
+          "red-dark": "#c50f15",
+          "red-light": "#ff3b3f",
+          black: "#0f0f0f",
+          charcoal: "#1a1a1a",
+          slate: "#2d2d2d",
+          gray: "#6b6b6b",
+          "gray-light": "#e8e8e8",
+          "gray-bg": "#f5f5f5",
+        },
         background: "var(--background)",
         foreground: "var(--foreground)",
         card: {

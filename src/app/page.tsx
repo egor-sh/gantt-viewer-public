@@ -55,36 +55,38 @@ export default function Home() {
   const stats = project ? computeStats(project) : null;
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
-      {/* Header — padded left for macOS traffic lights */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4 flex-wrap pl-[80px]">
+    <div className="min-h-screen flex flex-col bg-alfa-gray-bg">
+      {/* Header — Alfa Bank style: dark charcoal bar with red accent */}
+      <header className="bg-alfa-charcoal text-white sticky top-0 z-40 border-b border-alfa-slate">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4 flex-wrap pl-[90px]">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-lg bg-emerald-600 flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-lg bg-alfa-red flex items-center justify-center shrink-0 shadow-md">
               <BarChart3 className="w-5 h-5 text-white" />
             </div>
             <div className="min-w-0">
-              <h1 className="font-semibold text-slate-900 text-base sm:text-lg leading-tight truncate">
+              <h1 className="font-semibold text-white text-base sm:text-lg leading-tight truncate">
                 Просмотрщик диаграммы Ганта
               </h1>
-              <p className="text-[11px] text-slate-500 leading-tight">
+              <p className="text-[11px] text-alfa-gray leading-tight">
                 Microsoft Project XML · для macOS
               </p>
             </div>
           </div>
           {project && (
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={loadDemo}>
+              <Button variant="outline" size="sm" onClick={loadDemo} className="border-alfa-slate text-white hover:bg-alfa-slate hover:text-white">
                 <Layers className="w-4 h-4 mr-1.5" />
                 Демо
               </Button>
-              <Button variant="outline" size="sm" onClick={reset}>
+              <Button variant="outline" size="sm" onClick={reset} className="border-alfa-slate text-white hover:bg-alfa-slate hover:text-white">
                 <FileBarChart className="w-4 h-4 mr-1.5" />
                 Другой файл
               </Button>
             </div>
           )}
         </div>
+        {/* Red accent strip — Alfa Bank signature */}
+        <div className="h-0.5 bg-alfa-red w-full" />
       </header>
 
       <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-6">
@@ -104,11 +106,11 @@ export default function Home() {
             <TabsContent value="gantt">
               <div className="max-w-2xl mx-auto space-y-6">
                 <div className="text-center">
-                  <h2 className="text-xl sm:text-2xl font-semibold text-slate-900">
+                  <h2 className="text-xl sm:text-2xl font-semibold text-alfa-black">
                     Откройте файл Microsoft Project
                   </h2>
-                  <p className="text-sm text-slate-500 mt-1.5 max-w-md mx-auto">
-                    Простой просмотрщик файлов <code className="text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded text-[12px]">.xml</code> из MS Project.
+                  <p className="text-sm text-alfa-gray mt-1.5 max-w-md mx-auto">
+                    Простой просмотрщик файлов <code className="text-alfa-charcoal bg-alfa-gray-light px-1.5 py-0.5 rounded text-[12px]">.xml</code> из MS Project.
                     Работает локально — ничего не устанавливается, файлы никуда не отправляются.
                   </p>
                 </div>
@@ -118,7 +120,7 @@ export default function Home() {
                 <FormatNotice />
 
                 <div className="pt-2">
-                  <Button onClick={loadDemo} variant="default" className="w-full" size="lg">
+                  <Button onClick={loadDemo} variant="default" className="w-full bg-alfa-red hover:bg-alfa-red-dark text-white" size="lg">
                     <Layers className="w-4 h-4 mr-2" />
                     Открыть демо-проект
                   </Button>
@@ -142,22 +144,22 @@ export default function Home() {
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-2 min-w-0">
-                  <h2 className="font-semibold text-slate-900 text-base sm:text-lg truncate">
+                  <h2 className="font-semibold text-alfa-black text-base sm:text-lg truncate">
                     {project.title}
                   </h2>
                   {fileName && (
-                    <span className="text-[11px] text-slate-400 font-mono truncate">
+                    <span className="text-[11px] text-alfa-gray font-mono truncate">
                       {fileName}
                     </span>
                   )}
                 </div>
                 {stats && (
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-500 mt-0.5">
-                    <span><strong className="text-slate-700">{stats.taskCount}</strong> задач</span>
-                    <span><strong className="text-slate-700">{stats.summaryCount}</strong> суммарных</span>
-                    <span><strong className="text-slate-700">{stats.milestoneCount}</strong> вех</span>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-alfa-gray mt-0.5">
+                    <span><strong className="text-alfa-charcoal">{stats.taskCount}</strong> задач</span>
+                    <span><strong className="text-alfa-charcoal">{stats.summaryCount}</strong> суммарных</span>
+                    <span><strong className="text-alfa-charcoal">{stats.milestoneCount}</strong> вех</span>
                     {stats.criticalCount > 0 && (
-                      <span className="text-rose-600"><strong>{stats.criticalCount}</strong> критических</span>
+                      <span className="text-alfa-red font-medium"><strong>{stats.criticalCount}</strong> критических</span>
                     )}
                     <span className="hidden sm:inline">·</span>
                     <span>{format(project.startDate, "dd.MM.yyyy")} → {format(project.finishDate, "dd.MM.yyyy")}</span>
@@ -165,7 +167,7 @@ export default function Home() {
                 )}
               </div>
               {activeTab === "gantt" && (
-                <div className="flex items-center gap-1 shrink-0 bg-white border border-slate-200 rounded-lg p-1">
+                <div className="flex items-center gap-1 shrink-0 bg-white border border-alfa-gray-light rounded-lg p-1">
                   <ZoomBtn active={zoom === "day"} onClick={() => setZoom("day")} icon={<ZoomIn className="w-3.5 h-3.5" />} label="Дни" />
                   <ZoomBtn active={zoom === "week"} onClick={() => setZoom("week")} icon={<CalendarRange className="w-3.5 h-3.5" />} label="Недели" />
                   <ZoomBtn active={zoom === "month"} onClick={() => setZoom("month")} icon={<ZoomOut className="w-3.5 h-3.5" />} label="Месяцы" />
@@ -193,17 +195,17 @@ export default function Home() {
               {/* Gantt tab */}
               <TabsContent value="gantt">
                 {/* Legend */}
-                <div className="flex items-center gap-4 text-[11px] text-slate-500 flex-wrap mb-3">
-                  <LegendItem color="bg-emerald-500" label="Обычная задача" />
-                  <LegendItem color="bg-rose-500" label="Критическая" />
-                  <LegendItem color="bg-slate-700" label="Суммарная" />
-                  <LegendItem diamond="bg-amber-500" label="Веха" />
-                  <LegendItem line="bg-rose-500" label="Сегодня" />
+                <div className="flex items-center gap-4 text-[11px] text-alfa-gray flex-wrap mb-3">
+                  <LegendItem color="bg-alfa-red" label="Обычная задача" />
+                  <LegendItem color="bg-alfa-red-dark" label="Критическая" />
+                  <LegendItem color="bg-alfa-charcoal" label="Суммарная" />
+                  <LegendItem diamond="bg-alfa-red" label="Веха" />
+                  <LegendItem line="bg-alfa-red" label="Сегодня" />
                   <LegendItem arrow label="Связь Ф→Н/Н→Н/Ф→Ф/Н→Ф" />
                 </div>
 
                 {/* Main viewer */}
-                <div className="flex rounded-xl overflow-hidden border border-slate-200 bg-white shadow-sm">
+                <div className="flex rounded-xl overflow-hidden border border-alfa-gray-light bg-white shadow-sm">
                   <div className="flex-1 min-w-0">
                     <GanttChart
                       project={project}
@@ -220,7 +222,7 @@ export default function Home() {
                 </div>
 
                 {!selected && (
-                  <div className="flex items-center gap-2 text-[12px] text-slate-500 mt-2">
+                  <div className="flex items-center gap-2 text-[12px] text-alfa-gray mt-2">
                     <AlertCircle className="w-3.5 h-3.5" />
                     <span>Кликните по задаче, чтобы увидеть детали и связи.</span>
                   </div>
@@ -271,7 +273,7 @@ function ZoomBtn({ active, onClick, icon, label }: { active: boolean; onClick: (
       onClick={onClick}
       className={cn(
         "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[12px] font-medium transition-colors",
-        active ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100",
+        active ? "bg-alfa-charcoal text-white" : "text-alfa-gray hover:bg-alfa-gray-light",
       )}
     >
       {icon}
@@ -286,7 +288,7 @@ function LegendItem({ color, label, diamond, line, arrow }: { color?: string; la
       {color && <div className={cn("w-3 h-2 rounded-sm", color)} />}
       {diamond && <div className={cn("w-2.5 h-2.5 rotate-45", diamond)} />}
       {line && <div className={cn("w-3 h-0.5", line)} style={{ backgroundImage: "repeating-linear-gradient(90deg, currentColor 0 2px, transparent 2px 4px)" }} />}
-      {arrow && <div className="w-3 h-px bg-slate-400 relative after:content-[''] after:absolute after:right-0 after:top-1/2 after:-translate-y-1/2 after:border-l-[4px] after:border-l-slate-400 after:border-y-[2px] after:border-y-transparent" />}
+      {arrow && <div className="w-3 h-px bg-alfa-gray relative after:content-[''] after:absolute after:right-0 after:top-1/2 after:-translate-y-1/2 after:border-l-[4px] after:border-l-alfa-gray after:border-y-[2px] after:border-y-transparent" />}
       <span>{label}</span>
     </div>
   );
@@ -294,12 +296,12 @@ function LegendItem({ color, label, diamond, line, arrow }: { color?: string; la
 
 function Feature({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) {
   return (
-    <div className="bg-white border border-slate-200 rounded-lg p-3">
-      <div className="w-7 h-7 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-1.5">
+    <div className="bg-white border border-alfa-gray-light rounded-lg p-3">
+      <div className="w-7 h-7 rounded-md bg-alfa-red/10 text-alfa-red flex items-center justify-center mx-auto mb-1.5">
         {icon}
       </div>
-      <div className="text-[12px] font-semibold text-slate-900">{title}</div>
-      <div className="text-[11px] text-slate-500 mt-0.5">{desc}</div>
+      <div className="text-[12px] font-semibold text-alfa-black">{title}</div>
+      <div className="text-[11px] text-alfa-gray mt-0.5">{desc}</div>
     </div>
   );
 }

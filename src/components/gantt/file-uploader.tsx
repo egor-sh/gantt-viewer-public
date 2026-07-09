@@ -60,7 +60,7 @@ export function FileUploader({ onLoad, onError }: Props) {
     <div
       className={cn(
         "border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer",
-        dragging ? "border-emerald-500 bg-emerald-50" : "border-slate-300 bg-slate-50/50 hover:bg-slate-50",
+        dragging ? "border-alfa-red bg-alfa-red/10" : "border-alfa-gray-light bg-alfa-gray-bg/50 hover:bg-alfa-gray-bg",
       )}
       onDragOver={(e) => {
         e.preventDefault();
@@ -82,22 +82,22 @@ export function FileUploader({ onLoad, onError }: Props) {
         }}
       />
       <div className="flex flex-col items-center gap-3">
-        <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
+        <div className="w-12 h-12 rounded-full bg-alfa-red/10 flex items-center justify-center">
           {loading ? (
-            <div className="w-5 h-5 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+            <div className="w-5 h-5 border-2 border-alfa-red border-t-transparent rounded-full animate-spin" />
           ) : (
-            <Upload className="w-5 h-5 text-emerald-600" />
+            <Upload className="w-5 h-5 text-alfa-red" />
           )}
         </div>
         <div>
-          <p className="text-sm font-medium text-slate-900">
+          <p className="text-sm font-medium text-alfa-charcoal">
             Перетащите сюда файл Microsoft Project
           </p>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-alfa-gray mt-1">
             или нажмите, чтобы выбрать файл .xml
           </p>
         </div>
-        <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-400">
+        <div className="flex items-center gap-1.5 mt-1 text-[11px] text-alfa-gray">
           <FileText className="w-3 h-3" />
           <span>MS Project XML (.xml)</span>
         </div>
@@ -108,10 +108,10 @@ export function FileUploader({ onLoad, onError }: Props) {
 
 export function FormatNotice() {
   return (
-    <div className="flex gap-2 items-start text-xs text-slate-500 bg-amber-50/60 border border-amber-200 rounded-md p-3">
-      <AlertCircle className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
+    <div className="flex gap-2 items-start text-xs text-alfa-gray bg-alfa-red/5 border border-alfa-red/20 rounded-md p-3">
+      <AlertCircle className="w-4 h-4 shrink-0 text-alfa-red mt-0.5" />
       <div>
-        <p className="font-medium text-amber-800 mb-0.5">Как получить XML из .mpp</p>
+        <p className="font-medium text-alfa-red-dark mb-0.5">Как получить XML из .mpp</p>
         <p>
           В Microsoft Project: <span className="font-mono">Файл → Сохранить как →</span> выберите формат
           <span className="font-mono"> XML (*.xml)</span>. Аналогично в Project Libre и Merlin Project.

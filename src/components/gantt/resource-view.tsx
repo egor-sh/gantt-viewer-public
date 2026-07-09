@@ -93,13 +93,13 @@ function hasConflict(vac: Vacation, stat: ResourceStat | undefined): boolean {
 
 function UtilBar({ hours, maxHours }: { hours: number; maxHours: number }) {
   const pct = maxHours > 0 ? Math.min(100, (hours / maxHours) * 100) : 0;
-  const color = pct > 80 ? "bg-rose-500" : pct > 50 ? "bg-amber-500" : "bg-emerald-500";
+  const color = pct > 80 ? "bg-alfa-red/50" : pct > 50 ? "bg-alfa-red/50" : "bg-alfa-red/100";
   return (
     <div className="flex items-center gap-2">
-      <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden min-w-[60px]">
+      <div className="flex-1 h-2 bg-alfa-gray-light rounded-full overflow-hidden min-w-[60px]">
         <div className={cn("h-full rounded-full transition-all", color)} style={{ width: `${pct}%` }} />
       </div>
-      <span className="text-[11px] text-slate-500 tabular-nums w-16 text-right">{hours}ч</span>
+      <span className="text-[11px] text-alfa-gray tabular-nums w-16 text-right">{hours}ч</span>
     </div>
   );
 }
@@ -157,7 +157,7 @@ export function ResourceView({ project, vacations, onVacationsChange }: Resource
 
   if (stats.length === 0 && project.tasks.length === 0) {
     return (
-      <div className="text-center text-slate-400 py-20">
+      <div className="text-center text-alfa-gray py-20">
         <Users className="w-10 h-10 mx-auto mb-3 opacity-50" />
         <p>Нет данных. Загрузите проект для просмотра ресурсов.</p>
       </div>
@@ -168,14 +168,14 @@ export function ResourceView({ project, vacations, onVacationsChange }: Resource
     <div className="space-y-6">
       {/* ── Workload summary ─────────────────────────────────────────── */}
       <div>
-        <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-1.5">
-          <Users className="w-4 h-4 text-emerald-600" />
+        <h3 className="text-sm font-semibold text-alfa-charcoal mb-3 flex items-center gap-1.5">
+          <Users className="w-4 h-4 text-alfa-red" />
           Загруженность по ресурсам
         </h3>
-        <div className="rounded-xl border border-slate-200 overflow-hidden bg-white">
+        <div className="rounded-xl border border-alfa-gray-light overflow-hidden bg-white">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500">
+              <tr className="bg-alfa-gray-bg text-[11px] uppercase tracking-wide text-alfa-gray">
                 <th className="text-left font-medium px-4 py-2.5">Ресурс</th>
                 <th className="text-center font-medium px-3 py-2.5">Задач</th>
                 <th className="text-left font-medium px-4 py-2.5 min-w-[180px]">Загрузка</th>
@@ -183,17 +183,17 @@ export function ResourceView({ project, vacations, onVacationsChange }: Resource
                 <th className="text-left font-medium px-4 py-2.5">Занятость по датам</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-alfa-gray-light">
               {stats.map((s) => {
                 const vCount = vacations.filter((v) => v.resource === s.name).length;
                 return (
-                  <tr key={s.name} className="hover:bg-slate-50/60">
-                    <td className="px-4 py-2.5 font-medium text-slate-900">{s.name}</td>
-                    <td className="px-3 py-2.5 text-center tabular-nums text-slate-600">{s.taskCount}</td>
+                  <tr key={s.name} className="hover:bg-alfa-gray-bg/60">
+                    <td className="px-4 py-2.5 font-medium text-alfa-charcoal">{s.name}</td>
+                    <td className="px-3 py-2.5 text-center tabular-nums text-alfa-gray">{s.taskCount}</td>
                     <td className="px-4 py-2.5">
                       <UtilBar hours={s.totalHours} maxHours={maxHours} />
                     </td>
-                    <td className="px-3 py-2.5 text-center tabular-nums text-slate-600">{s.totalDays}</td>
+                    <td className="px-3 py-2.5 text-center tabular-nums text-alfa-gray">{s.totalDays}</td>
                     <td className="px-4 py-2.5">
                       <BusyTimeline stat={s} vacations={vacations.filter((v) => v.resource === s.name)} projectStart={project.startDate} projectEnd={project.finishDate} />
                     </td>
@@ -202,7 +202,7 @@ export function ResourceView({ project, vacations, onVacationsChange }: Resource
               })}
               {stats.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
+                  <td colSpan={5} className="px-4 py-8 text-center text-alfa-gray">
                     В проекте нет назначенных ресурсов
                   </td>
                 </tr>
@@ -215,14 +215,14 @@ export function ResourceView({ project, vacations, onVacationsChange }: Resource
       {/* ── Detailed task breakdown ──────────────────────────────────── */}
       {stats.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-1.5">
-            <Clock className="w-4 h-4 text-emerald-600" />
+          <h3 className="text-sm font-semibold text-alfa-charcoal mb-3 flex items-center gap-1.5">
+            <Clock className="w-4 h-4 text-alfa-red" />
             Детализация задач
           </h3>
-          <div className="rounded-xl border border-slate-200 overflow-hidden bg-white">
+          <div className="rounded-xl border border-alfa-gray-light overflow-hidden bg-white">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500">
+                <tr className="bg-alfa-gray-bg text-[11px] uppercase tracking-wide text-alfa-gray">
                   <th className="text-left font-medium px-4 py-2.5">Ресурс</th>
                   <th className="text-left font-medium px-4 py-2.5">Задача</th>
                   <th className="text-center font-medium px-3 py-2.5">Начало</th>
@@ -231,17 +231,17 @@ export function ResourceView({ project, vacations, onVacationsChange }: Resource
                   <th className="text-center font-medium px-3 py-2.5">Статус</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-alfa-gray-light">
                 {stats.flatMap((s) =>
                   s.tasks.map((t, i) => (
-                    <tr key={`${s.name}-${i}`} className="hover:bg-slate-50/60">
-                      <td className="px-4 py-2 font-medium text-slate-900">{i === 0 ? s.name : ""}</td>
-                      <td className="px-4 py-2 text-slate-700">{t.name}</td>
-                      <td className="px-3 py-2 text-center tabular-nums text-slate-500 text-[12px]">{format(t.start, "dd.MM.yyyy")}</td>
-                      <td className="px-3 py-2 text-center tabular-nums text-slate-500 text-[12px]">{format(t.finish, "dd.MM.yyyy")}</td>
-                      <td className="px-3 py-2 text-center tabular-nums text-slate-600">{t.hours}</td>
+                    <tr key={`${s.name}-${i}`} className="hover:bg-alfa-gray-bg/60">
+                      <td className="px-4 py-2 font-medium text-alfa-charcoal">{i === 0 ? s.name : ""}</td>
+                      <td className="px-4 py-2 text-alfa-charcoal">{t.name}</td>
+                      <td className="px-3 py-2 text-center tabular-nums text-alfa-gray text-[12px]">{format(t.start, "dd.MM.yyyy")}</td>
+                      <td className="px-3 py-2 text-center tabular-nums text-alfa-gray text-[12px]">{format(t.finish, "dd.MM.yyyy")}</td>
+                      <td className="px-3 py-2 text-center tabular-nums text-alfa-gray">{t.hours}</td>
                       <td className="px-3 py-2 text-center">
-                        {t.isCritical && <span className="inline-block px-1.5 py-0.5 text-[10px] font-medium bg-rose-100 text-rose-700 rounded">критич.</span>}
+                        {t.isCritical && <span className="inline-block px-1.5 py-0.5 text-[10px] font-medium bg-alfa-red/10 text-alfa-red-dark rounded">критич.</span>}
                       </td>
                     </tr>
                   )),
@@ -254,19 +254,19 @@ export function ResourceView({ project, vacations, onVacationsChange }: Resource
 
       {/* ── Vacations ───────────────────────────────────────────────── */}
       <div>
-        <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-1.5">
-          <Plane className="w-4 h-4 text-emerald-600" />
+        <h3 className="text-sm font-semibold text-alfa-charcoal mb-3 flex items-center gap-1.5">
+          <Plane className="w-4 h-4 text-alfa-red" />
           Отпуска и отсутствия
         </h3>
 
         {/* Add form */}
-        <div className="flex flex-wrap items-end gap-2 mb-3 bg-slate-50 border border-slate-200 rounded-lg p-3">
+        <div className="flex flex-wrap items-end gap-2 mb-3 bg-alfa-gray-bg border border-alfa-gray-light rounded-lg p-3">
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] uppercase tracking-wide text-slate-400">Ресурс</label>
+            <label className="text-[10px] uppercase tracking-wide text-alfa-gray">Ресурс</label>
             <select
               value={newRes}
               onChange={(e) => setNewRes(e.target.value)}
-              className="h-9 rounded-md border border-slate-300 bg-white px-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+              className="h-9 rounded-md border border-alfa-gray-light bg-white px-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-alfa-red/30"
             >
               <option value="">Выбрать…</option>
               {allNames.map((n) => (
@@ -275,15 +275,15 @@ export function ResourceView({ project, vacations, onVacationsChange }: Resource
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] uppercase tracking-wide text-slate-400">С</label>
+            <label className="text-[10px] uppercase tracking-wide text-alfa-gray">С</label>
             <Input type="date" value={newStart} onChange={(e) => setNewStart(e.target.value)} className="h-9 w-[150px]" />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] uppercase tracking-wide text-slate-400">По</label>
+            <label className="text-[10px] uppercase tracking-wide text-alfa-gray">По</label>
             <Input type="date" value={newEnd} onChange={(e) => setNewEnd(e.target.value)} className="h-9 w-[150px]" />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] uppercase tracking-wide text-slate-400">Комментарий</label>
+            <label className="text-[10px] uppercase tracking-wide text-alfa-gray">Комментарий</label>
             <Input value={newNote} onChange={(e) => setNewNote(e.target.value)} placeholder="необязательно" className="h-9 w-[160px]" />
           </div>
           <Button onClick={addVacation} size="sm" className="h-9">
@@ -293,10 +293,10 @@ export function ResourceView({ project, vacations, onVacationsChange }: Resource
         </div>
 
         {/* Vacation table */}
-        <div className="rounded-xl border border-slate-200 overflow-hidden bg-white">
+        <div className="rounded-xl border border-alfa-gray-light overflow-hidden bg-white">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500">
+              <tr className="bg-alfa-gray-bg text-[11px] uppercase tracking-wide text-alfa-gray">
                 <th className="text-left font-medium px-4 py-2.5">Ресурс</th>
                 <th className="text-center font-medium px-3 py-2.5">С</th>
                 <th className="text-center font-medium px-3 py-2.5">По</th>
@@ -305,10 +305,10 @@ export function ResourceView({ project, vacations, onVacationsChange }: Resource
                 <th className="px-3 py-2.5"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-alfa-gray-light">
               {sortedVacations.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
+                  <td colSpan={6} className="px-4 py-8 text-center text-alfa-gray">
                     Отпуска ещё не добавлены
                   </td>
                 </tr>
@@ -320,23 +320,23 @@ export function ResourceView({ project, vacations, onVacationsChange }: Resource
                 const dEnd = parseDate(v.end);
                 const days = dStart && dEnd ? differenceInCalendarDays(dEnd, dStart) + 1 : 0;
                 return (
-                  <tr key={v.id} className={cn("hover:bg-slate-50/60", conflict && "bg-rose-50/40")}>
-                    <td className="px-4 py-2.5 font-medium text-slate-900 flex items-center gap-1.5">
+                  <tr key={v.id} className={cn("hover:bg-alfa-gray-bg/60", conflict && "bg-alfa-red/5/40")}>
+                    <td className="px-4 py-2.5 font-medium text-alfa-charcoal flex items-center gap-1.5">
                       {v.resource}
                       {conflict && (
                         <span title="Пересечение с задачей" className="inline-flex">
-                          <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
+                          <AlertTriangle className="w-3.5 h-3.5 text-alfa-red" />
                         </span>
                       )}
                     </td>
-                    <td className="px-3 py-2.5 text-center tabular-nums text-slate-600 text-[12px]">{v.start ? format(parseDate(v.start)!, "dd.MM.yyyy") : "—"}</td>
-                    <td className="px-3 py-2.5 text-center tabular-nums text-slate-600 text-[12px]">{v.end ? format(parseDate(v.end)!, "dd.MM.yyyy") : "—"}</td>
-                    <td className="px-3 py-2.5 text-center tabular-nums text-slate-600">{days}</td>
-                    <td className="px-4 py-2.5 text-slate-500">{v.note || "—"}</td>
+                    <td className="px-3 py-2.5 text-center tabular-nums text-alfa-gray text-[12px]">{v.start ? format(parseDate(v.start)!, "dd.MM.yyyy") : "—"}</td>
+                    <td className="px-3 py-2.5 text-center tabular-nums text-alfa-gray text-[12px]">{v.end ? format(parseDate(v.end)!, "dd.MM.yyyy") : "—"}</td>
+                    <td className="px-3 py-2.5 text-center tabular-nums text-alfa-gray">{days}</td>
+                    <td className="px-4 py-2.5 text-alfa-gray">{v.note || "—"}</td>
                     <td className="px-3 py-2.5 text-right">
                       <button
                         onClick={() => removeVacation(v.id)}
-                        className="text-slate-400 hover:text-rose-500 transition-colors p-1 rounded"
+                        className="text-alfa-gray hover:text-alfa-red transition-colors p-1 rounded"
                         title="Удалить"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -353,7 +353,7 @@ export function ResourceView({ project, vacations, onVacationsChange }: Resource
           const stat = stats.find((s) => s.name === v.resource);
           return hasConflict(v, stat);
         }) && (
-          <div className="flex items-center gap-2 mt-2 text-[12px] text-rose-600">
+          <div className="flex items-center gap-2 mt-2 text-[12px] text-alfa-red">
             <AlertTriangle className="w-3.5 h-3.5" />
             <span>Красным выделены отпуска, пересекающиеся с назначенными задачами.</span>
           </div>
@@ -433,7 +433,7 @@ function BusyTimeline({
             key={i}
             className={cn(
               "h-3.5 rounded-sm transition-colors",
-              vac ? "bg-sky-400" : busy ? "bg-emerald-500" : "bg-slate-100",
+              vac ? "bg-sky-400" : busy ? "bg-alfa-red/100" : "bg-alfa-gray-light",
             )}
             style={{ width: `${100 / cellCount}%`, minWidth: "3px" }}
             title={format(new Date(startDate.getTime() + dayIdx * 86400000), "dd.MM.yyyy")}

@@ -123,13 +123,13 @@ export function GanttChart({ project, zoom, onTaskClick, selectedUid }: Props) {
   const tooltipTask = flat.find((x) => x.task.uid === hoverUid)?.task;
 
   return (
-    <div className="relative overflow-auto border border-slate-200 rounded-lg bg-white" style={{ maxHeight: "70vh" }}>
+    <div className="relative overflow-auto border border-alfa-gray-light rounded-lg bg-white" style={{ maxHeight: "70vh" }}>
       <div className="flex" style={{ width: 480 + totalWidth, minWidth: "100%" }}>
         {/* LEFT: task table */}
-        <div className="sticky left-0 z-20 bg-white border-r border-slate-200 shrink-0" style={{ width: 480 }}>
+        <div className="sticky left-0 z-20 bg-white border-r border-alfa-gray-light shrink-0" style={{ width: 480 }}>
           {/* Header */}
-          <div className="sticky top-0 z-30 bg-slate-50 border-b border-slate-200 flex items-end px-3" style={{ height: HEADER_H }}>
-            <div className="grid grid-cols-[1fr_72px_72px_56px] w-full text-[11px] uppercase tracking-wide text-slate-500 font-semibold pb-1.5">
+          <div className="sticky top-0 z-30 bg-alfa-gray-bg border-b border-alfa-gray-light flex items-end px-3" style={{ height: HEADER_H }}>
+            <div className="grid grid-cols-[1fr_72px_72px_56px] w-full text-[11px] uppercase tracking-wide text-alfa-gray font-semibold pb-1.5">
               <div>Задача</div>
               <div className="text-right">Начало</div>
               <div className="text-right">Конец</div>
@@ -141,9 +141,9 @@ export function GanttChart({ project, zoom, onTaskClick, selectedUid }: Props) {
             <div
               key={task.uid}
               className={cn(
-                "flex items-center px-3 border-b border-slate-100 cursor-pointer transition-colors",
-                selectedUid === task.uid ? "bg-emerald-50" : "hover:bg-slate-50",
-                task.isCritical && "bg-rose-50/40",
+                "flex items-center px-3 border-b border-alfa-gray-light cursor-pointer transition-colors",
+                selectedUid === task.uid ? "bg-alfa-red/10" : "hover:bg-alfa-gray-bg",
+                task.isCritical && "bg-alfa-red/5",
               )}
               style={{ height: ROW_H }}
               onClick={() => onTaskClick?.(task)}
@@ -156,47 +156,47 @@ export function GanttChart({ project, zoom, onTaskClick, selectedUid }: Props) {
               >
                 <div className="flex items-center gap-1.5 min-w-0">
                   {task.isSummary && (
-                    <span className="text-slate-400 text-[10px] font-mono">▾</span>
+                    <span className="text-alfa-gray text-[10px] font-mono">▾</span>
                   )}
                   {task.isMilestone ? (
-                    <span className="text-amber-600 shrink-0">◆</span>
+                    <span className="text-alfa-red shrink-0">◆</span>
                   ) : task.isSummary ? (
-                    <span className="text-slate-700 shrink-0">▤</span>
+                    <span className="text-alfa-charcoal shrink-0">▤</span>
                   ) : (
-                    <span className="text-emerald-600 shrink-0">▶</span>
+                    <span className="text-alfa-red shrink-0">▶</span>
                   )}
                   <span
                     className={cn(
                       "truncate",
-                      task.isSummary ? "font-semibold text-slate-900" : "text-slate-700",
-                      task.isMilestone && "font-semibold text-amber-700",
+                      task.isSummary ? "font-semibold text-alfa-charcoal" : "text-alfa-charcoal",
+                      task.isMilestone && "font-semibold text-alfa-red-dark",
                     )}
                     title={task.name}
                   >
                     {task.name}
                   </span>
                 </div>
-                <div className="text-right text-slate-600 tabular-nums">
+                <div className="text-right text-alfa-gray tabular-nums">
                   {format(task.start, "dd.MM.yy")}
                 </div>
-                <div className="text-right text-slate-600 tabular-nums">
+                <div className="text-right text-alfa-gray tabular-nums">
                   {format(task.finish, "dd.MM.yy")}
                 </div>
-                <div className="text-right tabular-nums font-medium text-slate-700">
+                <div className="text-right tabular-nums font-medium text-alfa-charcoal">
                   {task.percentComplete}%
                 </div>
               </div>
             </div>
           ))}
           {flat.length === 0 && (
-            <div className="p-6 text-sm text-slate-500">В проекте нет задач.</div>
+            <div className="p-6 text-sm text-alfa-gray">В проекте нет задач.</div>
           )}
         </div>
 
         {/* RIGHT: timeline */}
         <div className="relative shrink-0" style={{ width: totalWidth }}>
           {/* Time scale header */}
-          <div className="sticky top-0 z-10 bg-white border-b border-slate-200" style={{ height: HEADER_H }}>
+          <div className="sticky top-0 z-10 bg-white border-b border-alfa-gray-light" style={{ height: HEADER_H }}>
             <TimeScale days={days} dayWidth={dayWidth} zoom={zoom} />
           </div>
           {/* Grid + rows */}
@@ -454,15 +454,15 @@ function TaskBar({
       >
         {/* Filled portion showing % complete */}
         <div
-          className="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-1.5 bg-slate-700/80 rounded-sm"
+          className="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-1.5 bg-alfa-charcoal/80 rounded-sm"
         />
         <div
-          className="absolute top-1/2 -translate-y-1/2 h-1.5 bg-emerald-500 rounded-sm"
+          className="absolute top-1/2 -translate-y-1/2 h-1.5 bg-alfa-red/100 rounded-sm"
           style={{ width: `${task.percentComplete}%` }}
         />
         {/* End caps */}
-        <div className="absolute -bottom-0.5 left-0 w-1 h-3 bg-slate-700" />
-        <div className="absolute -bottom-0.5 right-0 w-1 h-3 bg-slate-700" />
+        <div className="absolute -bottom-0.5 left-0 w-1 h-3 bg-alfa-charcoal" />
+        <div className="absolute -bottom-0.5 right-0 w-1 h-3 bg-alfa-charcoal" />
       </div>
     );
   }
@@ -476,7 +476,7 @@ function TaskBar({
     <div
       className={cn(
         "absolute cursor-pointer rounded-sm border transition-shadow",
-        selected && "ring-2 ring-offset-1 ring-emerald-400",
+        selected && "ring-2 ring-offset-1 ring-alfa-red",
       )}
       style={{
         left: start,
@@ -500,7 +500,7 @@ function TaskBar({
       />
       {dayWidth >= 20 && (
         <span
-          className="absolute inset-0 flex items-center px-1.5 text-[10px] font-medium text-slate-800 truncate"
+          className="absolute inset-0 flex items-center px-1.5 text-[10px] font-medium text-alfa-charcoal truncate"
         >
           {task.percentComplete}%
         </span>
@@ -511,46 +511,46 @@ function TaskBar({
 
 function Tooltip({ task }: { task: GanttTask }) {
   return (
-    <div className="fixed bottom-4 right-4 z-50 max-w-sm bg-white border border-slate-200 shadow-lg rounded-lg p-4 pointer-events-none">
+    <div className="fixed bottom-4 right-4 z-50 max-w-sm bg-white border border-alfa-gray-light shadow-lg rounded-lg p-4 pointer-events-none">
       <div className="flex items-start gap-2 mb-2">
-        {task.isMilestone && <span className="text-amber-500">◆</span>}
-        {task.isSummary && <span className="text-slate-500">▤</span>}
-        <h3 className="font-semibold text-sm text-slate-900 flex-1">{task.name}</h3>
+        {task.isMilestone && <span className="text-alfa-red">◆</span>}
+        {task.isSummary && <span className="text-alfa-gray">▤</span>}
+        <h3 className="font-semibold text-sm text-alfa-charcoal flex-1">{task.name}</h3>
       </div>
       <dl className="text-xs space-y-1">
         <div className="flex justify-between gap-4">
-          <dt className="text-slate-500">Начало</dt>
+          <dt className="text-alfa-gray">Начало</dt>
           <dd className="font-medium tabular-nums">{format(task.start, "dd.MM.yyyy HH:mm")}</dd>
         </div>
         <div className="flex justify-between gap-4">
-          <dt className="text-slate-500">Конец</dt>
+          <dt className="text-alfa-gray">Конец</dt>
           <dd className="font-medium tabular-nums">{format(task.finish, "dd.MM.yyyy HH:mm")}</dd>
         </div>
         <div className="flex justify-between gap-4">
-          <dt className="text-slate-500">Длительность</dt>
+          <dt className="text-alfa-gray">Длительность</dt>
           <dd className="font-medium">{fmtDuration(task.durationHours)}</dd>
         </div>
         <div className="flex justify-between gap-4">
-          <dt className="text-slate-500">Готовность</dt>
+          <dt className="text-alfa-gray">Готовность</dt>
           <dd className="font-medium">{task.percentComplete}%</dd>
         </div>
         {task.resources.length > 0 && (
           <div className="flex justify-between gap-4">
-            <dt className="text-slate-500">Ресурсы</dt>
+            <dt className="text-alfa-gray">Ресурсы</dt>
             <dd className="font-medium text-right">{task.resources.join(", ")}</dd>
           </div>
         )}
         {task.isCritical && (
-          <div className="text-rose-600 font-medium pt-1">⚡ Критическая задача</div>
+          <div className="text-alfa-red font-medium pt-1">⚡ Критическая задача</div>
         )}
         {task.isMilestone && (
-          <div className="text-amber-600 font-medium pt-1">◆ Веха</div>
+          <div className="text-alfa-red font-medium pt-1">◆ Веха</div>
         )}
         {task.predecessors.length > 0 && (
-          <div className="pt-1 border-t border-slate-100 mt-1">
-            <dt className="text-slate-500 mb-0.5">Предшественники:</dt>
+          <div className="pt-1 border-t border-alfa-gray-light mt-1">
+            <dt className="text-alfa-gray mb-0.5">Предшественники:</dt>
             {task.predecessors.map((p, i) => (
-              <dd key={i} className="text-slate-700">
+              <dd key={i} className="text-alfa-charcoal">
                 #{p.fromUid} → {LINK_TYPE_LABEL[p.type]}
               </dd>
             ))}
