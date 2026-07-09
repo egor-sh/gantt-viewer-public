@@ -99,7 +99,12 @@ async function streamChatCompletion(
   messages,
   onChunk
 ) {
-  const url = `${baseURL.replace(/\/+$/, "")}/chat/completions`;
+  const base = baseURL.replace(/\/+$/, "");
+  // If baseURL already ends with /v1 or /v1/..., append /chat/completions directly.
+  // Otherwise add /v1/chat/completions (standard OpenAI-compatible path).
+  const url = /\/v\d+$/.test(base)
+    ? `${base}/chat/completions`
+    : `${base}/v1/chat/completions`;
 
   const body = JSON.stringify({
     model,
