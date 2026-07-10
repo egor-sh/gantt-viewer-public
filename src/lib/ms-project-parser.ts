@@ -207,14 +207,40 @@ export function parseMsProjectXml(xml: string): GanttProject {
     });
   }
 
-  // Build hierarchy from outline numbers (e.g. "1", "1.1", "1.1.1")
-  const byOutline = new Map(tasks.map((t) => [t.outlineNumber, t]));
-  for (const t of tasks) {
-    const parts = t.outlineNumber.split(".");
-    if (parts.length > 1) {
-      const parentNum = parts.slice(0, -1).join(".");
-      const parent = byOutline.get(parentNum);
-      if (parent && parent !== t) parent.children.push(t);
+  // Build hierarchy: prefer OutlineNumber ("1", "1.1", "1.1.1");
+  // if missing, fall back to OutlineLevel-based stacking.
+  const hasRealOutlineNumbers = tasks.some(
+    (t) => t.outlineNumber.includes(".") || (t.outlineNumber !== String(t.id)),
+  );
+
+  if (hasRealOutlineNumbers) {
+    const byOutline = new Map(tasks.map((t) => [t.outlineNumber, t]));
+    for (const t of tasks) {
+      const parts = t.outlineNumber.split(".");
+      if (parts.length > 1) {
+        const parentNum = parts.slice(0, -1).join(".");
+        const parent = byOutline.get(parentNum);
+        if (parent && parent !== t) parent.children.push(t);
+      }
+    }
+  } else {
+    // No OutlineNumber in XML — reconstruct tree from OutlineLevel values.
+    // Works with any starting level (0 or 1).
+    const minLevel = Math.min(...tasks.map((t) => t.outlineLevel));
+    const stack: GanttTask[] = []; // stack of {task at each level}
+    for (const t of tasks) {
+      const level = t.outlineLevel - minLevel; // normalise to 0-based
+      // Pop stack until we find the parent (level < current)
+      while (stack.length > 0 && stack[stack.length - 1].outlineLevel >= t.outlineLevel) {
+        stack.pop();
+      }
+      if (stack.length > 0) {
+        const parent = stack[stack.length - 1];
+        parent.children.push(t);
+        // Ensure parent is marked as summary
+        parent.isSummary = true;
+      }
+      stack.push(t);
     }
   }
 

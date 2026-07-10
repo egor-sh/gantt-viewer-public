@@ -114,7 +114,15 @@ export function GanttChart({ project, zoom, onTaskClick, selectedUid }: Props) {
         }
       }
     };
-    walk(projectLocal.tasks.filter((t) => t.outlineLevel === 1), 0);
+    // Root tasks = those with no parent (children list has them).
+    // Walk from tasks that have children built by the parser.
+    const allUids = new Set(projectLocal.tasks.map((t) => t.uid));
+    const childUids = new Set<number>();
+    for (const t of projectLocal.tasks) {
+      for (const c of t.children) childUids.add(c.uid);
+    }
+    const roots = projectLocal.tasks.filter((t) => !childUids.has(t.uid));
+    walk(roots, 0);
     return out;
   }, [projectLocal]);
 
