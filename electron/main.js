@@ -208,6 +208,26 @@ app.whenReady().then(() => {
 
   // ── Unsaved changes tracking ─────────────────────────────────────
   // Renderer sets this flag when the user makes changes to the project.
+  // ── Save file to disk (showSaveDialog) ───────────────────────────
+  ipcMain.handle("file:save", async (_e, { xml, defaultName }) => {
+    const win = BrowserWindow.getFocusedWindow() || mainWindow;
+    const result = await dialog.showSaveDialog(win, {
+      title: "Сохранить проект",
+      defaultPath: defaultName || "project.xml",
+      filters: [
+        { name: "MS Project XML", extensions: ["xml"] },
+        { name: "Все файлы", extensions: ["*"] },
+      ],
+    });
+    if (result.canceled || !result.filePath) return { saved: false };
+    try {
+      fs.writeFileSync(result.filePath, xml, "utf8");
+      return { saved: true, path: result.filePath };
+    } catch (err) {
+      return { saved: false, error: err.message };
+    }
+  });
+
   ipcMain.handle("app:set-unsaved", (_e, { hasChanges }) => {
     if (mainWindow) mainWindow._unsavedChanges = hasChanges;
     return true;

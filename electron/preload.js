@@ -31,6 +31,12 @@ contextBridge.exposeInMainWorld("ai", {
     ipcRenderer.on("ai:stream-error", (_e, data) => callback(data)),
 });
 
+contextBridge.exposeInMainWorld("files", {
+  // Save XML to disk via native save dialog
+  save: (xml, defaultName) =>
+    ipcRenderer.invoke("file:save", { xml, defaultName }),
+});
+
 contextBridge.exposeInMainWorld("versions", {
   // Push a new XML version onto the undo stack
   push: (xml, fileName, label) =>

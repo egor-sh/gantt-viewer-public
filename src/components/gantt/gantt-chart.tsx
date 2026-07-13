@@ -59,29 +59,21 @@ const LINK_TYPE_LABEL: Record<LinkType, string> = {
 };
 
 export function GanttChart({ project, zoom, onTaskClick, selectedUid }: Props) {
-  // Local copy of tasks so we can toggle .collapsed on summary rows
+  // Track collapsed state by task UID
   const [collapsedSet, setCollapsedSet] = useState<Set<number>>(new Set());
+
+  // Deep-clone tasks with collapsed flag applied, preserving parser-built children tree
   const projectLocal = useMemo(() => {
-    const tasks = project.tasks.map((t) => ({
+    const cloneTask = (t: GanttTask): GanttTask => ({
       ...t,
-      children: t.children.map((c) => ({ ...c })),
       collapsed: collapsedSet.has(t.uid),
-    }));
-    // Rebuild children arrays from outline numbers
-    const byUid = new Map(tasks.map((t) => [t.uid, { ...t, children: [] as GanttTask[] }]));
-    const roots: GanttTask[] = [];
-    for (const t of tasks) {
-      const parts = t.outlineNumber.split(".");
-      if (parts.length === 1) {
-        roots.push(byUid.get(t.uid)!);
-      } else {
-        const parentNum = parts.slice(0, -1).join(".");
-        const parent = [...byUid.values()].find((x) => x.outlineNumber === parentNum);
-        if (parent) parent.children.push(byUid.get(t.uid)!);
-        else roots.push(byUid.get(t.uid)!);
-      }
-    }
-    return { ...project, tasks, resources: project.resources };
+      children: t.children.map(cloneTask),
+    });
+    return {
+      ...project,
+      tasks: project.tasks.map(cloneTask),
+      resources: project.resources,
+    };
   }, [project, collapsedSet]);
 
   const toggleCollapse = useCallback((uid: number) => {
@@ -486,8 +478,8 @@ function TaskBar({
       >
         <polygon
           points={`0,${barH / 2} ${s},0 ${s * 2},${barH / 2} ${s},${barH}`}
-          fill={task.isCritical ? "#dc2626" : "#f59e0b"}
-          stroke={selected ? "#0f766e" : "#92400e"}
+          fill={task.isCritical ? "#dc2626" : "#ef2228"}
+          stroke={selected ? "#0f172a" : "#c50f15"}
           strokeWidth={selected ? 2 : 1}
         />
       </svg>
@@ -497,31 +489,49 @@ function TaskBar({
   if (task.isSummary) {
     return (
       <div
-        className="absolute cursor-pointer"
-        style={{ left: start, top: barY, width, height: barH }}
+        className={cn(
+          "absolute cursor-pointer rounded-sm border transition-shadow",
+          selected && "ring-2 ring-offset-1 ring-alfa-red",
+        )}
+        style={{
+          left: start,
+          top: barY,
+          width,
+          height: barH,
+          background: "#2d2d2d",
+          borderColor: "#1a1a1a",
+        }}
         onClick={onClick}
         onMouseEnter={onHover}
         onMouseLeave={onLeave}
       >
-        {/* Filled portion showing % complete */}
+        {/* Progress fill */}
         <div
-          className="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-1.5 bg-alfa-charcoal/80 rounded-sm"
+          className="absolute left-0 top-0 bottom-0 rounded-l-sm"
+          style={{
+            width: `${task.percentComplete}%`,
+            background: "#ef2228",
+            opacity: 0.85,
+          }}
         />
-        <div
-          className="absolute top-1/2 -translate-y-1/2 h-1.5 bg-alfa-red/100 rounded-sm"
-          style={{ width: `${task.percentComplete}%` }}
-        />
-        {/* End caps */}
-        <div className="absolute -bottom-0.5 left-0 w-1 h-3 bg-alfa-charcoal" />
-        <div className="absolute -bottom-0.5 right-0 w-1 h-3 bg-alfa-charcoal" />
+        {/* End caps — darker tabs at both ends (MS Project summary style) */}
+        <div className="absolute bottom-0 left-0 w-1 h-2 bg-alfa-black rounded-bl-sm" />
+        <div className="absolute bottom-0 right-0 w-1 h-2 bg-alfa-black rounded-br-sm" />
+        {dayWidth >= 20 && (
+          <span
+            className="absolute inset-0 flex items-center px-1.5 text-[10px] font-medium text-white truncate"
+          >
+            {task.percentComplete}%
+          </span>
+        )}
       </div>
     );
   }
 
-  // Regular task bar
-  const fill = task.isCritical ? "#fee2e2" : "#d1fae5";
-  const stroke = task.isCritical ? "#dc2626" : "#0f766e";
-  const progressFill = task.isCritical ? "#dc2626" : "#10b981";
+  // Regular task bar — Alfa Bank palette
+  const fill = task.isCritical ? "#fee2e2" : "#f0f0f0";
+  const stroke = task.isCritical ? "#dc2626" : "#6b6b6b";
+  const progressFill = task.isCritical ? "#dc2626" : "#ef2228";
 
   return (
     <div

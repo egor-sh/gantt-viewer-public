@@ -81,19 +81,53 @@ export default function Home() {
     });
   }, []);
 
-  // ── Push current project XML as a version ──
+  // ── Save: write XML to disk (native dialog) + push internal version ──
   const saveProjectVersion = useCallback(async (label: string = "Ручное сохранение") => {
     const vf = (window as any).versions;
+    const ff = (window as any).files;
     const proj = projectRef.current;
-    if (!vf || !proj || !fileNameRef.current) return;
+    if (!proj || !fileNameRef.current) return;
 
-    try {
-      const xml = projectToXml(proj);
-      await vf.push(xml, fileNameRef.current, label);
-      setUnsavedChanges(false);
-      refreshVersions();
-    } catch (e) {
-      console.error("Failed to save version:", e);
+    const xml = projectToXml(proj);
+
+    // Push internal version (for undo)
+    if (vf) {
+      try {
+        await vf.push(xml, fileNameRef.current, label);
+        refreshVersions();
+      } catch (e) {
+        console.error("Failed to save version:", e);
+      }
+    }
+
+    // Save to disk via native dialog
+    if (ff) {
+      try {
+        const result = await ff.save(xml, fileNameRef.current);
+        if (result.saved) {
+          setUnsavedChanges(false);
+          toast.success("Файл сохранён", {
+            description: result.path,
+          });
+        }
+      } catch (e: any) {
+        toast.error("Ошибка сохранения файла", { description: e.message });
+      }
+    } else {
+      // Fallback for non-Electron (browser) — download
+      try {
+        const blob = new Blob([xml], { type: "application/xml" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileNameRef.current || "project.xml";
+        a.click();
+        URL.revokeObjectURL(url);
+        setUnsavedChanges(false);
+        toast.success("Файл скачан");
+      } catch {
+        toast.error("Не удалось сохранить файл");
+      }
     }
   }, [refreshVersions]);
 
