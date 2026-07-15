@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import type { KeyboardEvent } from "react";
-import { Settings, Send, Sparkles, AlertTriangle, FileText, Wand2, Check, Trash2 } from "lucide-react";
+import { Settings, Send, Sparkles, AlertTriangle, FileText, Wand2, Check, Trash2, ChevronRight, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -392,40 +392,7 @@ export function AiPanel({ project, onLoadProject }: AiPanelProps) {
                     m.role === "user" ? "justify-end" : "justify-start",
                   )}
                 >
-                  <div
-                    className={cn(
-                      "max-w-[85%] rounded-2xl px-3.5 py-2 text-[13px] leading-relaxed whitespace-pre-wrap break-words",
-                      m.role === "user"
-                        ? "bg-alfa-red text-white rounded-br-md"
-                        : "bg-white border border-alfa-gray-light text-alfa-charcoal rounded-bl-md",
-                    )}
-                  >
-                    {m.content || (
-                      <span className="inline-flex gap-1 items-center py-1">
-                        <Dot /> <Dot delay="0.15s" /> <Dot delay="0.3s" />
-                      </span>
-                    )}
-                    {/* Show "Apply XML" button if assistant message contains <Project> */}
-                    {m.role === "assistant" && m.content && /<Project>[\s\S]*<\/Project>/.test(m.content) && (
-                      <button
-                        onClick={() => {
-                          const match = m.content.match(/<Project>[\s\S]*<\/Project>/);
-                          if (!match) return;
-                          try {
-                            const p = parseMsProjectXml(match[0]);
-                            onLoadProject(p, "ai-updated.xml");
-                            toast.success("План обновлён", { description: `${p.tasks.length} задач` });
-                          } catch {
-                            toast.error("Не удалось применить XML");
-                          }
-                        }}
-                        className="mt-2 flex items-center gap-1.5 px-2.5 py-1 bg-alfa-red text-white rounded-md text-[11px] font-medium hover:bg-alfa-red-dark transition-colors"
-                      >
-                        <Check className="w-3 h-3" />
-                        Применить изменения
-                      </button>
-                    )}
-                  </div>
+                  <MessageBubble key={i} m={m} onLoadProject={onLoadProject} loading={loading} />
                 </div>
               ))
             )}
@@ -492,6 +459,101 @@ export function AiPanel({ project, onLoadProject }: AiPanelProps) {
       )}
 
       <AiConfigDialog open={configOpen} onClose={() => setConfigOpen(false)} />
+    </div>
+  );
+}
+
+function MessageBubble({
+  m,
+  onLoadProject,
+}: {
+  m: ChatMessage;
+  onLoadProject: (p: GanttProject, name: string) => void;
+  loading: boolean;
+}) {
+  const [xmlExpanded, setXmlExpanded] = useState(false);
+
+  // Split content: text before XML, XML block, text after XML
+  const xmlMatch = m.content.match(/<Project>[\s\S]*<\/Project>/);
+  const hasXml = m.role === "assistant" && xmlMatch;
+
+  let beforeXml = m.content;
+  let xmlContent = "";
+  let afterXml = "";
+
+  if (hasXml && xmlMatch) {
+    const idx = m.content.indexOf(xmlMatch[0]);
+    beforeXml = m.content.slice(0, idx).trim();
+    xmlContent = xmlMatch[0];
+    afterXml = m.content.slice(idx + xmlMatch[0].length).trim();
+  }
+
+  return (
+    <div
+      className={cn(
+        "flex",
+        m.role === "user" ? "justify-end" : "justify-start",
+      )}
+    >
+      <div
+        className={cn(
+          "max-w-[85%] rounded-2xl px-3.5 py-2 text-[13px] leading-relaxed whitespace-pre-wrap break-words",
+          m.role === "user"
+            ? "bg-alfa-red text-white rounded-br-md"
+            : "bg-white border border-alfa-gray-light text-alfa-charcoal rounded-bl-md",
+        )}
+      >
+        {/* Loading dots */}
+        {!m.content && (
+          <span className="inline-flex gap-1 items-center py-1">
+            <Dot /> <Dot delay="0.15s" /> <Dot delay="0.3s" />
+          </span>
+        )}
+
+        {/* Text before XML */}
+        {beforeXml && <span>{beforeXml}</span>}
+
+        {/* Collapsible XML block */}
+        {hasXml && (
+          <div className="mt-2 border border-alfa-gray-light rounded-lg overflow-hidden">
+            <button
+              onClick={() => setXmlExpanded(!xmlExpanded)}
+              className="w-full flex items-center gap-1.5 px-2.5 py-1.5 bg-alfa-gray-bg hover:bg-alfa-gray-light transition-colors text-[11px] text-alfa-gray font-medium"
+            >
+              {xmlExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+              <FileText className="w-3 h-3" />
+              XML проекта ({xmlContent.length} символов)
+            </button>
+            {xmlExpanded && (
+              <pre className="text-[10px] font-mono text-alfa-charcoal bg-white p-2 max-h-48 overflow-auto whitespace-pre-wrap break-all border-t border-alfa-gray-light">
+                {xmlContent}
+              </pre>
+            )}
+            {/* Apply button — always visible */}
+            <div className="px-2.5 py-1.5 border-t border-alfa-gray-light bg-white">
+              <button
+                onClick={() => {
+                  if (!xmlMatch) return;
+                  try {
+                    const p = parseMsProjectXml(xmlMatch[0]);
+                    onLoadProject(p, "ai-updated.xml");
+                    toast.success("План обновлён", { description: `${p.tasks.length} задач` });
+                  } catch {
+                    toast.error("Не удалось применить XML");
+                  }
+                }}
+                className="flex items-center gap-1.5 px-2.5 py-1 bg-alfa-red text-white rounded-md text-[11px] font-medium hover:bg-alfa-red-dark transition-colors"
+              >
+                <Check className="w-3 h-3" />
+                Применить изменения
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Text after XML */}
+        {afterXml && <span className="block mt-1">{afterXml}</span>}
+      </div>
     </div>
   );
 }

@@ -202,11 +202,11 @@ export function GanttChart({ project, zoom, onTaskClick, selectedUid }: Props) {
                     </button>
                   )}
                   {task.isMilestone ? (
-                    <span className="text-alfa-red shrink-0">◆</span>
+                    <span className="text-alfa-red shrink-0 text-[11px]">◆</span>
                   ) : task.isSummary ? (
-                    <span className="text-alfa-charcoal shrink-0">▤</span>
+                    <span className="shrink-0 text-[9px] text-alfa-charcoal" style={{ display: "inline-block", transform: collapsedSet.has(task.uid) ? "rotate(-90deg)" : "rotate(0deg)", transition: "transform 0.15s" }}>▼</span>
                   ) : (
-                    <span className="text-alfa-red shrink-0">▶</span>
+                    <span className="shrink-0 w-[7px] h-[7px] rounded-full bg-alfa-charcoal inline-block" />
                   )}
                   <span
                     className={cn(

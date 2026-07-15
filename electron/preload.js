@@ -1,5 +1,5 @@
 // Preload script — runs in the renderer process with limited Node.js access.
-// Exposes AI, versioning, and Confluence APIs to the renderer via contextBridge.
+// Exposes AI, versioning, file, Confluence, and Jira APIs via contextBridge.
 
 const { contextBridge, ipcRenderer } = require("electron");
 
@@ -32,9 +32,12 @@ contextBridge.exposeInMainWorld("ai", {
 });
 
 contextBridge.exposeInMainWorld("files", {
-  // Save XML to disk via native save dialog
-  save: (xml, defaultName) =>
-    ipcRenderer.invoke("file:save", { xml, defaultName }),
+  // Save to a known path (no dialog)
+  save: (xml, filePath) =>
+    ipcRenderer.invoke("file:save", { xml, filePath }),
+  // Save As — always shows native dialog
+  saveAs: (xml, defaultName) =>
+    ipcRenderer.invoke("file:saveAs", { xml, defaultName }),
 });
 
 contextBridge.exposeInMainWorld("versions", {
@@ -61,10 +64,21 @@ contextBridge.exposeInMainWorld("confluence", {
     ipcRenderer.invoke("confluence:vacations", params),
 });
 
+contextBridge.exposeInMainWorld("jira", {
+  // Search issues via JQL
+  search: (params) =>
+    ipcRenderer.invoke("jira:search", params),
+  // Get a single issue by key
+  getIssue: (issueKey) =>
+    ipcRenderer.invoke("jira:getIssue", { issueKey }),
+  // Create a new issue
+  create: (params) =>
+    ipcRenderer.invoke("jira:create", params),
+});
+
 contextBridge.exposeInMainWorld("electron", {
   // Mark that there are unsaved changes (for close dialog)
   setUnsavedChanges: (hasChanges) => {
-    // We can't directly set the flag, but we can invoke an IPC
     ipcRenderer.invoke("app:set-unsaved", { hasChanges });
   },
   // Confirm quit (called by renderer after saving)

@@ -201,18 +201,29 @@ app.whenReady().then(() => {
     return true;
   });
 
-  // ── Confluence IPC handler ───────────────────────────────────────
+  // ── Atlassian MCP (Confluence + Jira) ────────────────────────────
   ipcMain.handle("confluence:vacations", async (_e, params) => {
     return await confluenceHandler.fetchVacations(params);
   });
 
-  // ── Unsaved changes tracking ─────────────────────────────────────
-  // Renderer sets this flag when the user makes changes to the project.
-  // ── Save file to disk (showSaveDialog) ───────────────────────────
-  ipcMain.handle("file:save", async (_e, { xml, defaultName }) => {
+  ipcMain.handle("jira:search", async (_e, params) => {
+    return await confluenceHandler.searchJira(params);
+  });
+
+  ipcMain.handle("jira:getIssue", async (_e, { issueKey }) => {
+    return await confluenceHandler.getJiraIssue(issueKey);
+  });
+
+  ipcMain.handle("jira:create", async (_e, params) => {
+    return await confluenceHandler.createJiraIssue(params);
+  });
+
+  // ── Save file to disk ────────────────────────────────────────────
+  // saveAs: always shows dialog, returns new path
+  ipcMain.handle("file:saveAs", async (_e, { xml, defaultName }) => {
     const win = BrowserWindow.getFocusedWindow() || mainWindow;
     const result = await dialog.showSaveDialog(win, {
-      title: "Сохранить проект",
+      title: "Сохранить как…",
       defaultPath: defaultName || "project.xml",
       filters: [
         { name: "MS Project XML", extensions: ["xml"] },
@@ -228,6 +239,18 @@ app.whenReady().then(() => {
     }
   });
 
+  // save: writes to filePath if known, otherwise falls back to saveAs
+  ipcMain.handle("file:save", async (_e, { xml, filePath }) => {
+    if (!filePath) return { saved: false, needDialog: true };
+    try {
+      fs.writeFileSync(filePath, xml, "utf8");
+      return { saved: true, path: filePath };
+    } catch (err) {
+      return { saved: false, error: err.message };
+    }
+  });
+
+  // ── Unsaved changes tracking ─────────────────────────────────────
   ipcMain.handle("app:set-unsaved", (_e, { hasChanges }) => {
     if (mainWindow) mainWindow._unsavedChanges = hasChanges;
     return true;
