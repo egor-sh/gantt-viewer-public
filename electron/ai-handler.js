@@ -84,7 +84,16 @@ function saveConfig(config) {
 }
 
 function getActiveProvider(config) {
-  return config.provider[config.activeProvider] ?? null;
+  const p = config.provider[config.activeProvider] ?? null;
+  if (!p) return null;
+  // Normalize opencode-style config: baseURL/apiKey may live inside .options
+  if (p.options && !p.baseURL) {
+    p.baseURL = p.options.baseURL || p.options.base_url;
+  }
+  if (p.options && !p.apiKey) {
+    p.apiKey = p.options.apiKey || p.options.api_key;
+  }
+  return p;
 }
 
 // ── API call (OpenAI-compatible, streaming) ───────────────────────────────
