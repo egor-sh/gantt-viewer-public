@@ -132,46 +132,79 @@ async function streamChatCompletion(
     headers["Authorization"] = `Bearer ${apiKey}`;
   }
 
-  const res = await fetch(url, { method: "POST", headers, body });
+  return await httpsStreamRequest(url, headers, body, onChunk);
+}
 
-  if (!res.ok) {
-    const errText = await res.text().catch(() => res.statusText);
-    throw new Error(`API error ${res.status}: ${errText.slice(0, 200)}`);
-  }
+/**
+ * Streaming HTTPS request via Node's https module.
+ * Uses rejectUnauthorized: false so corporate self-signed
+ * certificates (SSL inspection in VPN) work — Electron's built-in
+ * fetch ignores NODE_TLS_REJECT_UNAUTHORIZED.
+ */
+function httpsStreamRequest(url, headers, body, onChunk) {
+  return new Promise((resolve, reject) => {
+    const https = require("https");
+    const urlObj = new URL(url);
 
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  let full = "";
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split("\n");
-    buffer = lines.pop() || "";
-
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed || !trimmed.startsWith("data:")) continue;
-      const data = trimmed.slice(5).trim();
-      if (data === "[DONE]") continue;
-
-      try {
-        const json = JSON.parse(data);
-        const delta = json.choices?.[0]?.delta?.content;
-        if (delta) {
-          full += delta;
-          onChunk(delta);
+    const req = https.request(
+      {
+        hostname: urlObj.hostname,
+        port: urlObj.port || 443,
+        path: urlObj.pathname + urlObj.search,
+        method: "POST",
+        headers,
+        rejectUnauthorized: false, // corporate SSL inspection
+      },
+      (res) => {
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          let errText = "";
+          res.on("data", (c) => { errText += c; });
+          res.on("end", () => {
+            reject(new Error(`API error ${res.statusCode}: ${errText.slice(0, 200) || res.statusMessage}`));
+          });
+          return;
         }
-      } catch {
-        // skip malformed chunks
-      }
-    }
-  }
 
-  return full;
+        let buffer = "";
+        let full = "";
+        const decoder = new TextDecoder();
+
+        res.on("data", (chunk) => {
+          buffer += decoder.decode(chunk, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || !trimmed.startsWith("data:")) continue;
+            const data = trimmed.slice(5).trim();
+            if (data === "[DONE]") continue;
+
+            try {
+              const json = JSON.parse(data);
+              const delta = json.choices?.[0]?.delta?.content;
+              if (delta) {
+                full += delta;
+                onChunk(delta);
+              }
+            } catch {
+              // skip malformed chunks
+            }
+          }
+        });
+
+        res.on("end", () => resolve(full));
+        res.on("error", reject);
+      }
+    );
+
+    req.on("error", reject);
+    req.setTimeout(120000, () => {
+      req.destroy(new Error("Таймаут запроса к AI-провайдеру (120 сек)"));
+    });
+    req.write(body);
+    req.end();
+  });
 }
 
 // ── Public handlers (called from IPC) ─────────────────────────────────────
