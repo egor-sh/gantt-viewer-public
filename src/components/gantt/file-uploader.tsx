@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { parseMsProjectXml, type GanttProject } from "@/lib/ms-project-parser";
 
 interface Props {
-  onLoad: (project: GanttProject, fileName: string) => void;
+  onLoad: (project: GanttProject, fileName: string, filePath?: string) => void;
   onError: (message: string) => void;
 }
 
@@ -36,7 +36,9 @@ export function FileUploader({ onLoad, onError }: Props) {
           onError("В файле не найдено ни одной задачи. Возможно, это не MS Project XML.");
           return;
         }
-        onLoad(project, file.name);
+        // In Electron, File objects carry the absolute path
+        const filePath = (file as any).path || (file as any).filePath || "";
+        onLoad(project, file.name, filePath);
       } catch (e) {
         onError(e instanceof Error ? e.message : "Не удалось прочитать файл.");
       } finally {

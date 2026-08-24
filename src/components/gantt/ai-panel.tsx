@@ -20,6 +20,7 @@ import { AiConfigDialog } from "./ai-config-dialog";
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+  ts?: number;
 }
 
 interface AiPanelProps {
@@ -72,6 +73,20 @@ export function AiPanel({ project, onLoadProject }: AiPanelProps) {
     } catch {
       // ignore corrupted storage
     }
+  }, []);
+
+// ── Save chat draft to localStorage so it survives tab switches ──
+  useEffect(() => {
+    try {
+      localStorage.setItem("gv_chat_draft", input);
+    } catch {}
+  }, [input]);
+
+  useEffect(() => {
+    try {
+      const d = localStorage.getItem("gv_chat_draft");
+      if (d) setInput(d);
+    } catch {}
   }, []);
 
   // ── Save chat history to localStorage when messages change ──
@@ -214,9 +229,10 @@ export function AiPanel({ project, onLoadProject }: AiPanelProps) {
     const text = input.trim();
     if (!text || loading || !ai) return;
 
-    const userMsg: ChatMessage = { role: "user", content: text };
+    const userMsg: ChatMessage = { role: "user", content: text, ts: Date.now() };
+
     const history = [...messages, userMsg];
-    setMessages([...history, { role: "assistant", content: "" }]);
+    setMessages([...history, { role: "assistant", content: "", ts: Date.now() }]);
     setInput("");
 
     const reqId = crypto.randomUUID();
@@ -245,8 +261,8 @@ export function AiPanel({ project, onLoadProject }: AiPanelProps) {
 
     setMessages((prev) => [
       ...prev,
-      { role: "user", content: "Проанализируй проект на риски" },
-      { role: "assistant", content: "Анализирую проект..." },
+      { role: "user", content: "Проанализируй проект на риски", ts: Date.now() },
+      { role: "assistant", content: "Анализирую проект...", ts: Date.now() },
     ]);
     setLoading(true);
 
@@ -474,7 +490,9 @@ function MessageBubble({
   const [xmlExpanded, setXmlExpanded] = useState(false);
 
   // Split content: text before XML, XML block, text after XML
-  const xmlMatch = m.content.match(/<Project>[\s\S]*<\/Project>/);
+  // Also matches an unterminated <Project> while streaming
+  const xmlMatch = m.content.match(/<Project[\s\S]*?(?:<\/Project>|$)/);
+  const xmlComplete = /<\/Project>/.test(m.content);
   const hasXml = m.role === "assistant" && xmlMatch;
 
   let beforeXml = m.content;
@@ -529,30 +547,42 @@ function MessageBubble({
                 {xmlContent}
               </pre>
             )}
-            {/* Apply button — always visible */}
-            <div className="px-2.5 py-1.5 border-t border-alfa-gray-light bg-white">
-              <button
-                onClick={() => {
-                  if (!xmlMatch) return;
-                  try {
-                    const p = parseMsProjectXml(xmlMatch[0]);
-                    onLoadProject(p, "ai-updated.xml");
-                    toast.success("План обновлён", { description: `${p.tasks.length} задач` });
-                  } catch {
-                    toast.error("Не удалось применить XML");
-                  }
-                }}
-                className="flex items-center gap-1.5 px-2.5 py-1 bg-alfa-red text-white rounded-md text-[11px] font-medium hover:bg-alfa-red-dark transition-colors"
-              >
-                <Check className="w-3 h-3" />
-                Применить изменения
-              </button>
-            </div>
+            {/* Apply button — only when XML is complete */}
+            {xmlComplete && (
+              <div className="px-2.5 py-1.5 border-t border-alfa-gray-light bg-white">
+                <button
+                  onClick={() => {
+                    if (!xmlMatch) return;
+                    try {
+                      const p = parseMsProjectXml(xmlMatch[0]);
+                      onLoadProject(p, "ai-updated.xml");
+                      toast.success("План обновлён", { description: `${p.tasks.length} задач` });
+                    } catch {
+                      toast.error("Не удалось применить XML");
+                    }
+                  }}
+                  className="flex items-center gap-1.5 px-2.5 py-1 bg-alfa-red text-white rounded-md text-[11px] font-medium hover:bg-alfa-red-dark transition-colors"
+                >
+                  <Check className="w-3 h-3" />
+                  Применить изменения
+                </button>
+              </div>
+            )}
           </div>
         )}
 
         {/* Text after XML */}
         {afterXml && <span className="block mt-1">{afterXml}</span>}
+        {m.ts && (
+          <div
+            className={cn(
+              "text-[9px] mt-1 opacity-60",
+              m.role === "user" ? "text-right" : "text-left",
+            )}
+          >
+            {new Date(m.ts).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
+          </div>
+        )}
       </div>
     </div>
   );

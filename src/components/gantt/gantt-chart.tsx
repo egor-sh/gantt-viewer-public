@@ -4,6 +4,7 @@ import { useMemo, useState, useCallback } from "react";
 import { eachDayOfInterval, format, startOfDay, addDays, differenceInCalendarDays, isWeekend } from "date-fns";
 import type { GanttProject, GanttTask, LinkType } from "@/lib/ms-project-parser";
 import { cn } from "@/lib/utils";
+import { ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 
 export type Zoom = "day" | "week" | "month";
 
@@ -164,7 +165,25 @@ export function GanttChart({ project, zoom, onTaskClick, selectedUid }: Props) {
           {/* Header */}
           <div className="sticky top-0 z-30 bg-alfa-gray-bg border-b border-alfa-gray-light flex items-end px-3" style={{ height: HEADER_H }}>
             <div className="grid grid-cols-[1fr_72px_72px_56px] w-full text-[11px] uppercase tracking-wide text-alfa-gray font-semibold pb-1.5">
-              <div>Задача</div>
+              <div className="flex items-center gap-2">
+                <span>Задача</span>
+                <span className="flex items-center gap-0.5 normal-case">
+                  <button
+                    onClick={() => setCollapsedSet(new Set(projectLocal.tasks.filter((t) => t.isSummary).map((t) => t.uid)))}
+                    className="p-0.5 rounded hover:bg-alfa-gray-light text-alfa-gray hover:text-alfa-charcoal transition-colors"
+                    title="Свернуть все группы"
+                  >
+                    <ChevronsDownUp className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setCollapsedSet(new Set())}
+                    className="p-0.5 rounded hover:bg-alfa-gray-light text-alfa-gray hover:text-alfa-charcoal transition-colors"
+                    title="Развернуть все группы"
+                  >
+                    <ChevronsUpDown className="w-3.5 h-3.5" />
+                  </button>
+                </span>
+              </div>
               <div className="text-right">Начало</div>
               <div className="text-right">Конец</div>
               <div className="text-right">%</div>

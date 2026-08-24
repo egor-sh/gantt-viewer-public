@@ -202,10 +202,10 @@ export default function Home() {
     }
   }, []);
 
-  const handleLoad = useCallback((p: GanttProject, name: string) => {
+  const handleLoad = useCallback((p: GanttProject, name: string, path?: string) => {
     setProject(p);
     setFileName(name);
-    setFilePath("");
+    setFilePath(path || "");
     setSelected(null);
     setActiveTab("gantt");
     setUnsavedChanges(false);
@@ -288,11 +288,11 @@ export default function Home() {
                 size="sm"
                 onClick={handleUndo}
                 disabled={versions.length === 0}
-                className="border-alfa-slate text-white hover:bg-alfa-slate hover:text-white"
+                className="border-alfa-slate bg-alfa-slate text-white hover:bg-white/10 hover:text-white"
                 title="Откатить к предыдущей версии"
               >
                 <Undo2 className="w-4 h-4 mr-1.5" />
-                <span className="hidden lg:inline">Откатить</span>
+                <span className="inline">Откатить</span>
               </Button>
               {/* History dropdown */}
               <div className="relative" onClick={(e) => e.stopPropagation()}>
@@ -301,11 +301,11 @@ export default function Home() {
                   size="sm"
                   onClick={() => { setHistoryOpen(!historyOpen); setSaveMenuOpen(false); }}
                   disabled={versions.length === 0}
-                  className="border-alfa-slate text-white hover:bg-alfa-slate hover:text-white"
+                  className="border-alfa-slate bg-alfa-slate text-white hover:bg-white/10 hover:text-white"
                   title="История версий"
                 >
                   <History className="w-4 h-4 mr-1.5" />
-                  <span className="hidden lg:inline">История</span>
+                  <span className="inline">История</span>
                   <ChevronDown className="w-3 h-3 ml-1" />
                 </Button>
                 {historyOpen && (
@@ -340,13 +340,13 @@ export default function Home() {
                   size="sm"
                   onClick={() => { setSaveMenuOpen(!saveMenuOpen); setHistoryOpen(false); }}
                   className={cn(
-                    "border-alfa-slate text-white hover:bg-alfa-slate hover:text-white",
+                    "border-alfa-slate bg-alfa-slate text-white hover:bg-white/10 hover:text-white",
                     unsavedChanges && "border-alfa-red/50 ring-1 ring-alfa-red/30",
                   )}
                   title="Сохранить"
                 >
                   <Save className="w-4 h-4 mr-1.5" />
-                  <span className="hidden lg:inline">{unsavedChanges ? "Сохранить *" : "Сохранить"}</span>
+                  <span className="inline">{unsavedChanges ? "Сохранить *" : "Сохранить"}</span>
                   <ChevronDown className="w-3 h-3 ml-1" />
                 </Button>
                 {saveMenuOpen && (
@@ -368,13 +368,13 @@ export default function Home() {
                   </div>
                 )}
               </div>
-              <Button variant="outline" size="sm" onClick={loadDemo} className="border-alfa-slate text-white hover:bg-alfa-slate hover:text-white">
+              <Button variant="outline" size="sm" onClick={loadDemo} className="border-alfa-slate bg-alfa-slate text-white hover:bg-white/10 hover:text-white">
                 <Layers className="w-4 h-4 mr-1.5" />
-                <span className="hidden xl:inline">Демо</span>
+                <span className="inline">Демо</span>
               </Button>
-              <Button variant="outline" size="sm" onClick={reset} className="border-alfa-slate text-white hover:bg-alfa-slate hover:text-white">
+              <Button variant="outline" size="sm" onClick={reset} className="border-alfa-slate bg-alfa-slate text-white hover:bg-white/10 hover:text-white">
                 <FileBarChart className="w-4 h-4 mr-1.5" />
-                <span className="hidden xl:inline">Другой файл</span>
+                <span className="inline">Другой файл</span>
               </Button>
             </div>
           )}
@@ -390,10 +390,6 @@ export default function Home() {
               <TabsTrigger value="gantt">
                 <FileBarChart className="w-3.5 h-3.5" />
                 Открыть файл
-              </TabsTrigger>
-              <TabsTrigger value="ai">
-                <Sparkles className="w-3.5 h-3.5" />
-                AI-ассистент
               </TabsTrigger>
             </TabsList>
 
@@ -427,10 +423,6 @@ export default function Home() {
                 </div>
               </div>
             </TabsContent>
-
-            <TabsContent value="ai">
-              <AiPanel project={project} onLoadProject={handleLoadWithVersioning} />
-            </TabsContent>
           </Tabs>
         ) : (
           <div className="space-y-4">
@@ -447,6 +439,15 @@ export default function Home() {
                     </span>
                   )}
                 </div>
+                {filePath ? (
+                  <div className="text-[10px] text-alfa-gray font-mono mt-0.5 truncate" title={filePath}>
+                    📁 {filePath}
+                  </div>
+                ) : (
+                  <div className="text-[10px] text-alfa-gray mt-0.5">
+                    Файл не сохранён — используйте «Сохранить как…», чтобы выбрать место
+                  </div>
+                )}
                 {stats && (
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-alfa-gray mt-0.5">
                     <span><strong className="text-alfa-charcoal">{stats.taskCount}</strong> задач</span>
