@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { BarChart3, CalendarClock, ZoomIn, ZoomOut, CalendarRange, FileBarChart, Layers, AlertCircle, Users, Sparkles, Undo2, History, Save, ChevronDown, FilePlus } from "lucide-react";
+import { BarChart3, CalendarClock, ZoomIn, ZoomOut, CalendarRange, FileBarChart, Layers, AlertCircle, Users, Sparkles, Undo2, CircleHelp, History, Save, ChevronDown, FilePlus } from "lucide-react";
 import { FileUploader, FormatNotice } from "@/components/gantt/file-uploader";
 import { GanttChart, type Zoom } from "@/components/gantt/gantt-chart";
 import { TaskDetails } from "@/components/gantt/task-details";
 import { ResourceView, type Vacation } from "@/components/gantt/resource-view";
 import { AiPanel } from "@/components/gantt/ai-panel";
+import { HelpDialog } from "@/components/gantt/help-dialog";
 import { demoProject, parseMsProjectXml, projectToXml, type GanttProject, type GanttTask } from "@/lib/ms-project-parser";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ export default function Home() {
   const [versions, setVersions] = useState<VersionEntry[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [saveMenuOpen, setSaveMenuOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const fileNameRef = useRef<string>("");
   const filePathRef = useRef<string>("");
@@ -257,6 +259,13 @@ export default function Home() {
     });
   }, [refreshVersions]);
 
+  useEffect(() => {
+    if (!localStorage.getItem("gv_tutorial_seen")) {
+      setHelpOpen(true);
+      localStorage.setItem("gv_tutorial_seen", "1");
+    }
+  }, []);
+
   const stats = project ? computeStats(project) : null;
 
   // Project title = file name without extension
@@ -282,6 +291,11 @@ export default function Home() {
           </div>
           {project && (
             <div className="flex items-center gap-2">
+              {/* Help */}
+              <Button variant="outline" size="sm" onClick={() => setHelpOpen(true)} className="border-alfa-slate bg-alfa-slate text-white hover:bg-white/10 hover:text-white" title="Справка">
+                <CircleHelp className="w-4 h-4" />
+                <span className="inline">Справка</span>
+              </Button>
               {/* Undo */}
               <Button
                 variant="outline"
@@ -540,6 +554,7 @@ export default function Home() {
           </div>
         )}
       </main>
+      <HelpDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   );
 }

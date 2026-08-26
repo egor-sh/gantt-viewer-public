@@ -45,16 +45,30 @@ const DEFAULT_CONFIG = {
         "qwen2.5:14b": { name: "Qwen 2.5 14B", limit: { context: 128000 } },
       },
     },
+    alfagen: {
+      name: "AlfaGen (внутренняя сеть)",
+      baseURL: "https://alfagen.moscow.alfaintra.net/continue-dev",
+      apiKey: "",
+      models: {
+        "DeepSeek-V4-Flash": { name: "DeepSeek-V4-Flash" },
+        "GLM-5.2": { name: "GLM-5.2" },
+      },
+    },
   },
 };
 
 function readConfig() {
+  const p = getConfigPath();
+  // Create default config file on first run
+  if (!fs.existsSync(p)) {
+    try {
+      saveConfig(DEFAULT_CONFIG);
+      return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    } catch {}
+    return DEFAULT_CONFIG;
+  }
   try {
-    const p = getConfigPath();
-    if (!fs.existsSync(p)) return DEFAULT_CONFIG;
     const user = JSON.parse(fs.readFileSync(p, "utf8"));
-
-    // Deep merge: user overrides built-in providers
     const merged = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
     merged.activeProvider = user.activeProvider ?? merged.activeProvider;
     merged.activeModel = user.activeModel ?? merged.activeModel;
@@ -68,6 +82,12 @@ function readConfig() {
           };
         } else {
           merged.provider[id] = prov;
+        }
+        // Normalize opencode-style options -> top-level baseURL/apiKey
+        const np = merged.provider[id];
+        if (np.options) {
+          if (np.options.baseURL) np.baseURL = np.options.baseURL;
+          if (np.options.apiKey) np.apiKey = np.options.apiKey;
         }
       }
     }
