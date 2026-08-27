@@ -7,6 +7,7 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 const { app, BrowserWindow, shell, protocol, net, ipcMain, dialog } = require("electron");
 const path = require("path");
+const fs = require("fs");
 const { pathToFileURL } = require("node:url");
 
 const aiHandler = require("./ai-handler");

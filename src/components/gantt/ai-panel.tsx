@@ -147,7 +147,7 @@ export function AiPanel({ project, onLoadProject }: AiPanelProps) {
       if (data.requestId !== requestIdRef.current) return;
       if (isGenerateRef.current) {
         const full = genBufferRef.current;
-        const match = full.match(/<Project>[\s\S]*<\/Project>/);
+        const match = full.match(/<Project[^>]*>[\s\S]*?<\/Project\s*>/);
         const xmlStr = match ? match[0] : full.trim();
         try {
           const p = parseMsProjectXml(xmlStr);
@@ -165,7 +165,7 @@ export function AiPanel({ project, onLoadProject }: AiPanelProps) {
       } else {
         // Chat mode — auto-detect <Project> XML and apply
         const chatFull = chatBufferRef.current;
-        const xmlMatch = chatFull.match(/<Project>[\s\S]*<\/Project>/);
+        const xmlMatch = chatFull.match(/<Project[^>]*>[\s\S]*?<\/Project\s*>/);
         if (xmlMatch) {
           try {
             const p = parseMsProjectXml(xmlMatch[0]);
@@ -547,8 +547,8 @@ function MessageBubble({
                 {xmlContent}
               </pre>
             )}
-            {/* Apply button — only when XML is complete */}
-            {xmlComplete && (
+            {/* Apply button — shown once XML complete or stream finished */}
+            {(xmlComplete || !loading) && (
               <div className="px-2.5 py-1.5 border-t border-alfa-gray-light bg-white">
                 <button
                   onClick={() => {

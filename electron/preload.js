@@ -1,7 +1,7 @@
 // Preload script — runs in the renderer process with limited Node.js access.
 // Exposes AI, versioning, file, Confluence, and Jira APIs via contextBridge.
 
-const { contextBridge, ipcRenderer } = require("electron");
+const { contextBridge, ipcRenderer, webUtils } = require("electron");
 
 // Mark that we're in Electron (for CSS adjustments)
 window.addEventListener("DOMContentLoaded", () => {
@@ -77,6 +77,14 @@ contextBridge.exposeInMainWorld("jira", {
 });
 
 contextBridge.exposeInMainWorld("electron", {
+  // Absolute path of a dropped/selected File (Electron ≥32 removed File.path)
+  getFilePath: (file) => {
+    try {
+      return webUtils.getPathForFile(file);
+    } catch {
+      return "";
+    }
+  },
   // Mark that there are unsaved changes (for close dialog)
   setUnsavedChanges: (hasChanges) => {
     ipcRenderer.invoke("app:set-unsaved", { hasChanges });

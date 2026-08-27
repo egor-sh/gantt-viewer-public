@@ -140,6 +140,7 @@ async function streamChatCompletion(
     messages,
     stream: true,
     temperature: 0.7,
+    max_tokens: 16384,
   });
 
   const headers = {
@@ -189,31 +190,39 @@ function httpsStreamRequest(url, headers, body, onChunk) {
         let full = "";
         const decoder = new TextDecoder();
 
+        const consumeLine = (line) => {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith("data:")) return;
+          const data = trimmed.slice(5).trim();
+          if (data === "[DONE]") return;
+          try {
+            const json = JSON.parse(data);
+            const delta = json.choices?.[0]?.delta?.content;
+            if (delta) {
+              full += delta;
+              onChunk(delta);
+            }
+          } catch {
+            // skip malformed chunks
+          }
+        };
+
         res.on("data", (chunk) => {
           buffer += decoder.decode(chunk, { stream: true });
           const lines = buffer.split("\n");
           buffer = lines.pop() || "";
-
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (!trimmed || !trimmed.startsWith("data:")) continue;
-            const data = trimmed.slice(5).trim();
-            if (data === "[DONE]") continue;
-
-            try {
-              const json = JSON.parse(data);
-              const delta = json.choices?.[0]?.delta?.content;
-              if (delta) {
-                full += delta;
-                onChunk(delta);
-              }
-            } catch {
-              // skip malformed chunks
-            }
-          }
+          for (const line of lines) consumeLine(line);
         });
 
-        res.on("end", () => resolve(full));
+        // SSE-серверы могут завершить поток без финального \n —
+        // иначе последний токен (например "</Project>") теряется.
+        res.on("end", () => {
+          if (buffer) {
+            for (const line of buffer.split("\n")) consumeLine(line);
+            buffer = "";
+          }
+          resolve(full);
+        });
         res.on("error", reject);
       }
     );

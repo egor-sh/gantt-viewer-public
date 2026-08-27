@@ -36,8 +36,14 @@ export function FileUploader({ onLoad, onError }: Props) {
           onError("В файле не найдено ни одной задачи. Возможно, это не MS Project XML.");
           return;
         }
-        // In Electron, File objects carry the absolute path
-        const filePath = (file as any).path || (file as any).filePath || "";
+        // Electron ≥32 removed File.path — get it via preload (webUtils)
+        const el = (window as any).electron;
+        let filePath = "";
+        try {
+          filePath = el?.getFilePath?.(file) || (file as any).path || "";
+        } catch {
+          filePath = "";
+        }
         onLoad(project, file.name, filePath);
       } catch (e) {
         onError(e instanceof Error ? e.message : "Не удалось прочитать файл.");

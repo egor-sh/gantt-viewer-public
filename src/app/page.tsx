@@ -114,12 +114,18 @@ export default function Home() {
     await pushInternalVersion(label);
 
     if (ff && filePathRef.current) {
-      const result = await ff.save(xml, filePathRef.current);
-      if (result.saved) {
-        setUnsavedChanges(false);
-        toast.success("Файл сохранён", { description: result.path });
-      } else if (result.error) {
-        toast.error("Ошибка сохранения", { description: result.error });
+      try {
+        const result = await ff.save(xml, filePathRef.current);
+        if (result.saved) {
+          setUnsavedChanges(false);
+          toast.success("Файл сохранён", { description: result.path });
+        } else if (result.error) {
+          toast.error("Ошибка сохранения", { description: result.error });
+        } else if (result.needDialog) {
+          handleSaveAs(label);
+        }
+      } catch (e) {
+        toast.error("Ошибка сохранения", { description: e instanceof Error ? e.message : String(e) });
       }
     } else {
       // No path — fall back to Save As
@@ -137,12 +143,16 @@ export default function Home() {
     await pushInternalVersion(label);
 
     if (ff) {
-      const result = await ff.saveAs(xml, fileNameRef.current || "project.xml");
-      if (result.saved) {
-        setFilePath(result.path);
-        setFileName(result.path.split("/").pop() || fileNameRef.current);
-        setUnsavedChanges(false);
-        toast.success("Файл сохранён", { description: result.path });
+      try {
+        const result = await ff.saveAs(xml, fileNameRef.current || "project.xml");
+        if (result.saved) {
+          setFilePath(result.path);
+          setFileName(result.path.split("/").pop() || fileNameRef.current);
+          setUnsavedChanges(false);
+          toast.success("Файл сохранён", { description: result.path });
+        }
+      } catch (e) {
+        toast.error("Ошибка сохранения", { description: e instanceof Error ? e.message : String(e) });
       }
     } else {
       // Browser fallback
