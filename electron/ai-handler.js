@@ -83,11 +83,17 @@ function readConfig() {
         } else {
           merged.provider[id] = prov;
         }
-        // Normalize opencode-style options -> top-level baseURL/apiKey
+        // Normalize opencode-style options -> top-level baseURL/apiKey.
+        // Top-level is the source of truth: options only as fallback,
+        // promoted keys are stripped so stale values can't override
+        // user edits after a save/reload round-trip (v0.0.14 fix).
         const np = merged.provider[id];
         if (np.options) {
-          if (np.options.baseURL) np.baseURL = np.options.baseURL;
-          if (np.options.apiKey) np.apiKey = np.options.apiKey;
+          if (!np.baseURL && np.options.baseURL) np.baseURL = np.options.baseURL;
+          if (!np.apiKey && np.options.apiKey) np.apiKey = np.options.apiKey;
+          if (np.baseURL) delete np.options.baseURL;
+          if (np.apiKey) delete np.options.apiKey;
+          if (Object.keys(np.options).length === 0) delete np.options;
         }
       }
     }
