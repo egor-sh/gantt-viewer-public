@@ -20,6 +20,7 @@ import { AiConfigDialog } from "./ai-config-dialog";
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+  reasoning?: string;
   ts?: number;
 }
 
@@ -118,6 +119,16 @@ export function AiPanel({ project, onLoadProject }: AiPanelProps) {
     if (!ai) return;
     registeredRef.current = true;
 
+    ai.onStreamReasoning?.((data: { requestId: string; chunk: string }) => {
+      if (data.requestId !== requestIdRef.current) return;
+      setMessages((prev) => {
+        const next = [...prev];
+        const idx = next.length - 1;
+        if (idx < 0 || next[idx].role !== "assistant") return prev;
+        next[idx] = { ...next[idx], reasoning: (next[idx].reasoning || "") + data.chunk };
+        return next;
+      });
+    });
     ai.onStreamChunk((data: { requestId: string; chunk: string }) => {
       if (data.requestId !== requestIdRef.current) return;
       if (isGenerateRef.current) {
@@ -223,6 +234,13 @@ export function AiPanel({ project, onLoadProject }: AiPanelProps) {
     },
     [],
   );
+
+  const handleStop = useCallback(() => {
+    const ai = (window as any).ai;
+    const rid = requestIdRef.current;
+    if (ai?.stop && rid) ai.stop(rid);
+    setLoading(false);
+  }, []);
 
   const sendMessage = useCallback(() => {
     const ai = (window as any).ai;
@@ -428,7 +446,7 @@ export function AiPanel({ project, onLoadProject }: AiPanelProps) {
             />
             <Button
               size="icon"
-              onClick={sendMessage}
+              onClick={loading ? handleStop : sendMessage}
               disabled={!input.trim() || loading || !aiAvailable}
               className="h-9 w-9 shrink-0 bg-alfa-red hover:bg-alfa-red-dark text-white"
             >
@@ -453,7 +471,7 @@ export function AiPanel({ project, onLoadProject }: AiPanelProps) {
             disabled={!aiAvailable || loading}
           />
           <Button
-            onClick={handleGenerate}
+            onClick={loading ? handleStop : handleGenerate}
             disabled={!genInput.trim() || loading || !aiAvailable}
             className="w-fit bg-alfa-red hover:bg-alfa-red-dark text-white"
           >
@@ -513,6 +531,12 @@ function MessageBubble({
         m.role === "user" ? "justify-end" : "justify-start",
       )}
     >
+      {m.reasoning ? (
+        <details open={!m.content} className="max-w-[85%] mb-1 rounded-lg border border-alfa-gray-light bg-alfa-gray-bg px-2.5 py-1.5">
+          <summary className="text-[11px] text-alfa-gray cursor-pointer select-none">Рассуждения модели</summary>
+          <div className="mt-1 text-[11px] text-alfa-gray whitespace-pre-wrap max-h-40 overflow-auto">{m.reasoning}</div>
+        </details>
+      ) : null}
       <div
         className={cn(
           "max-w-[85%] rounded-2xl px-3.5 py-2 text-[13px] leading-relaxed whitespace-pre-wrap break-words",

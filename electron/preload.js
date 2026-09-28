@@ -25,6 +25,9 @@ contextBridge.exposeInMainWorld("ai", {
   // Stream events
   onStreamChunk: (callback) =>
     ipcRenderer.on("ai:stream", (_e, data) => callback(data)),
+  onStreamReasoning: (callback) =>
+    ipcRenderer.on("ai:stream-reasoning", (_e, d) => callback(d)),
+  stop: (requestId) => ipcRenderer.invoke("ai:stop", { requestId }),
   onStreamEnd: (callback) =>
     ipcRenderer.on("ai:stream-end", (_e, data) => callback(data)),
   onStreamError: (callback) =>

@@ -253,6 +253,8 @@ export default function Home() {
 
   // ── AI changes ──
   const handleLoadWithVersioning = useCallback((p: GanttProject, name: string) => {
+    // Смена файла = новый контекст: переписка с ИИ не переносится
+    localStorage.removeItem("gv_chat_history");
     const vf = (window as any).versions;
     const oldProj = projectRef.current;
     const oldName = fileNameRef.current;
@@ -558,7 +560,7 @@ export default function Home() {
 
               {/* AI tab */}
               <TabsContent value="ai">
-                <AiPanel project={project} onLoadProject={handleLoadWithVersioning} />
+                <AiPanel key={fileName || "no-file"} project={project} onLoadProject={handleLoadWithVersioning} />
               </TabsContent>
             </Tabs>
           </div>

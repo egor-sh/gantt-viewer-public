@@ -7,6 +7,8 @@ const fs = require("fs");
 const path = require("path");
 const { app } = require("electron");
 
+const activeStreams = new Map();
+
 // ── Config ────────────────────────────────────────────────────────────────
 
 function getConfigPath() {
@@ -132,7 +134,9 @@ function getActiveProvider(config) {
 async function streamChatCompletion(
   { baseURL, apiKey, model },
   messages,
-  onChunk
+  onChunk,
+  onReasoning,
+  requestId
 ) {
   const base = baseURL.replace(/\/+$/, "");
   // If baseURL already ends with /v1 or /v1/..., append /chat/completions directly.
@@ -159,7 +163,7 @@ async function streamChatCompletion(
     headers["Authorization"] = `Bearer ${apiKey}`;
   }
 
-  return await httpsStreamRequest(url, headers, body, onChunk);
+  return await httpsStreamRequest(url, headers, body, onChunk, onReasoning, requestId);
 }
 
 /**
@@ -168,7 +172,7 @@ async function streamChatCompletion(
  * certificates (SSL inspection in VPN) work — Electron's built-in
  * fetch ignores NODE_TLS_REJECT_UNAUTHORIZED.
  */
-function httpsStreamRequest(url, headers, body, onChunk) {
+function httpsStreamRequest(url, headers, body, onChunk, onReasoning, requestId) {
   return new Promise((resolve, reject) => {
     const https = require("https");
     const urlObj = new URL(url);
@@ -194,6 +198,7 @@ function httpsStreamRequest(url, headers, body, onChunk) {
 
         let buffer = "";
         let full = "";
+        let fullReasoning = "";
         const decoder = new TextDecoder();
 
         const consumeLine = (line) => {
@@ -203,10 +208,14 @@ function httpsStreamRequest(url, headers, body, onChunk) {
           if (data === "[DONE]") return;
           try {
             const json = JSON.parse(data);
-            const delta = json.choices?.[0]?.delta?.content;
-            if (delta) {
-              full += delta;
-              onChunk(delta);
+            const delta = json.choices?.[0]?.delta || {};
+            if (delta.reasoning_content) {
+              fullReasoning += delta.reasoning_content;
+              if (onReasoning) onReasoning(delta.reasoning_content);
+            }
+            if (delta.content) {
+              full += delta.content;
+              onChunk(delta.content);
             }
           } catch {
             // skip malformed chunks
@@ -227,12 +236,14 @@ function httpsStreamRequest(url, headers, body, onChunk) {
             for (const line of buffer.split("\n")) consumeLine(line);
             buffer = "";
           }
+          if (requestId) activeStreams.delete(requestId);
           resolve(full);
         });
-        res.on("error", reject);
+        res.on("error", (e) => { if (requestId) activeStreams.delete(requestId); reject(e); });
       }
     );
 
+    if (requestId) activeStreams.set(requestId, req);
     req.on("error", reject);
     req.setTimeout(120000, () => {
       req.destroy(new Error("Таймаут запроса к AI-провайдеру (120 сек)"));
@@ -264,7 +275,11 @@ async function handleChat(event, { messages, systemPrompt, requestId }) {
     allMessages,
     (chunk) => {
       win?.webContents.send("ai:stream", { requestId, chunk });
-    }
+    },
+    (rchunk) => {
+      win?.webContents.send("ai:stream-reasoning", { requestId, chunk: rchunk });
+    },
+    requestId
   );
 
   win?.webContents.send("ai:stream-end", { requestId });
@@ -302,13 +317,24 @@ async function handleGenerate(event, { description, requestId }) {
     ],
     (chunk) => {
       win?.webContents.send("ai:stream", { requestId, chunk });
-    }
+    },
+    (rchunk) => {
+      win?.webContents.send("ai:stream-reasoning", { requestId, chunk: rchunk });
+    },
+    requestId
   );
 
   win?.webContents.send("ai:stream-end", { requestId });
 }
 
+function stopStream(requestId) {
+  const req = activeStreams.get(requestId);
+  if (req) { activeStreams.delete(requestId); req.destroy(new Error("Остановлено пользователем")); return true; }
+  return false;
+}
+
 module.exports = {
+  stopStream,
   readConfig,
   saveConfig,
   handleChat,

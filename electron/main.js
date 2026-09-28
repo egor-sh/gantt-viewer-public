@@ -181,6 +181,8 @@ app.whenReady().then(() => {
   });
 
   // ── Versioning IPC handlers ──────────────────────────────────────
+  ipcMain.handle("ai:stop", (_e, { requestId }) => aiHandler.stopStream(requestId));
+
   ipcMain.handle("version:push", (_e, { xml, fileName, label }) => {
     return versionManager.pushVersion(xml, fileName, label);
   });
