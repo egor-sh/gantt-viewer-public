@@ -47,9 +47,9 @@ const DEFAULT_CONFIG = {
         "qwen2.5:14b": { name: "Qwen 2.5 14B", limit: { context: 128000 } },
       },
     },
-    alfagen: {
-      name: "AlfaGen (внутренняя сеть)",
-      baseURL: "https://alfagen.moscow.alfaintra.net/continue-dev",
+    custom-gateway: {
+      name: "Custom LLM gateway (OpenAI-совместимый)",
+      baseURL: "",
       apiKey: "",
       models: {
         "DeepSeek-V4-Flash": { name: "DeepSeek-V4-Flash" },
