@@ -121,7 +121,7 @@ function createWindow() {
   });
 }
 
-// Trust corporate self-signed certificates (e.g. AlfaGen SSL inspection).
+// Trust corporate self-signed certificates (e.g. corporate LLM gateway SSL inspection).
 // This allows fetch() in ai-handler.js to work inside corporate VPN.
 app.on("certificate-error", (event, _webContents, _url, _error, _certificate, callback) => {
   event.preventDefault();
