@@ -500,6 +500,7 @@ export function AiPanel({ project, onLoadProject }: AiPanelProps) {
 function MessageBubble({
   m,
   onLoadProject,
+  loading,
 }: {
   m: ChatMessage;
   onLoadProject: (p: GanttProject, name: string) => void;
