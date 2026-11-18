@@ -26,6 +26,7 @@ interface VersionEntry {
 export default function Home() {
   const [project, setProject] = useState<GanttProject | null>(null);
   const [fileName, setFileName] = useState<string>("");
+  const [chatFileKey, setChatFileKey] = useState<string>("");
   const [filePath, setFilePath] = useState<string>("");
   const [zoom, setZoom] = useState<Zoom>("day");
   const [selected, setSelected] = useState<GanttTask | null>(null);
@@ -253,8 +254,12 @@ export default function Home() {
 
   // ── AI changes ──
   const handleLoadWithVersioning = useCallback((p: GanttProject, name: string) => {
-    // Смена файла = новый контекст: переписка с ИИ не переносится
-    localStorage.removeItem("gv_chat_history");
+    // Смена файла = новый контекст: переписка с ИИ не переносится.
+    // Исключение — применение AI-правок (ai-updated/ai-generated): тот же план, история чата сохраняется.
+    if (!name.startsWith("ai-")) {
+      localStorage.removeItem("gv_chat_history");
+      setChatFileKey(name);
+    }
     const vf = (window as any).versions;
     const oldProj = projectRef.current;
     const oldName = fileNameRef.current;
@@ -560,7 +565,7 @@ export default function Home() {
 
               {/* AI tab */}
               <TabsContent value="ai">
-                <AiPanel key={fileName || "no-file"} project={project} onLoadProject={handleLoadWithVersioning} />
+                <AiPanel key={chatFileKey || "no-file"} project={project} onLoadProject={handleLoadWithVersioning} />
               </TabsContent>
             </Tabs>
           </div>
